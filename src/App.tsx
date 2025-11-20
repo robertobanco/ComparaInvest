@@ -512,6 +512,7 @@ function App() {
 
   const [loadingRates, setLoadingRates] = useState(true);
   const [ratesError, setRatesError] = useState<string | null>(null);
+  const [ratesSource, setRatesSource] = useState<'api' | 'manual'>('api');
   const [monthlyTablePage, setMonthlyTablePage] = useState(0);
   const [monthsPerPage, setMonthsPerPage] = useState(12); // Padrão: 12 meses por página
 
@@ -534,86 +535,85 @@ function App() {
     };
   }, []);
 
-  // Buscar taxas do Banco Central
-  useEffect(() => {
-    const fetchEconomicRates = async () => {
-      setLoadingRates(true);
-      setRatesError(null);
+  const fetchEconomicRates = async () => {
+    setLoadingRates(true);
+    setRatesError(null);
 
-      try {
-        // Série 12: Taxa de juros - CDI acumulada no dia (% a.d.)
-        // Série 13522: IPCA - Variação acumulada em 12 meses (%)
+    try {
+      // Série 12: Taxa de juros - CDI acumulada no dia (% a.d.)
+      // Série 13522: IPCA - Variação acumulada em 12 meses (%)
 
-        const today = new Date();
-        const oneYearAgo = new Date(today);
-        oneYearAgo.setFullYear(today.getFullYear() - 1);
+      const today = new Date();
+      const oneYearAgo = new Date(today);
+      oneYearAgo.setFullYear(today.getFullYear() - 1);
 
-        const formatDate = (date: Date) => {
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const year = date.getFullYear();
-          return `${day}/${month}/${year}`;
-        };
+      const formatDate = (date: Date) => {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      };
 
-        const startDate = formatDate(oneYearAgo);
-        const endDate = formatDate(today);
+      const startDate = formatDate(oneYearAgo);
+      const endDate = formatDate(today);
 
-        // Buscar CDI Diário (série 12)
-        const cdiResponse = await fetch(
-          `https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=${startDate}&dataFinal=${endDate}`
-        );
+      // Buscar CDI Diário (série 12)
+      const cdiResponse = await fetch(
+        `https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=${startDate}&dataFinal=${endDate}`
+      );
 
-        // Buscar IPCA acumulado 12 meses (série 13522)
-        const ipcaResponse = await fetch(
-          `https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados?formato=json&dataInicial=${startDate}&dataFinal=${endDate}`
-        );
+      // Buscar IPCA acumulado 12 meses (série 13522)
+      const ipcaResponse = await fetch(
+        `https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados?formato=json&dataInicial=${startDate}&dataFinal=${endDate}`
+      );
 
-        if (cdiResponse.ok && ipcaResponse.ok) {
-          const cdiData = await cdiResponse.json();
-          const ipcaData = await ipcaResponse.json();
+      if (cdiResponse.ok && ipcaResponse.ok) {
+        const cdiData = await cdiResponse.json();
+        const ipcaData = await ipcaResponse.json();
 
-          let cdiUpdated = false;
-          let ipcaUpdated = false;
+        let cdiUpdated = false;
+        let ipcaUpdated = false;
 
-          if (cdiData.length > 0) {
-            // Pegar o último valor diário disponível
-            const latestCDIDaily = parseFloat(cdiData[cdiData.length - 1].valor);
+        if (cdiData.length > 0) {
+          // Pegar o último valor diário disponível
+          const latestCDIDaily = parseFloat(cdiData[cdiData.length - 1].valor);
 
-            // Anualizar: (1 + taxa_diaria/100)^252 - 1
-            const latestCDIAnnual = (Math.pow(1 + latestCDIDaily / 100, 252) - 1) * 100;
-            const roundedCDIAnnual = parseFloat(latestCDIAnnual.toFixed(2));
+          // Anualizar: (1 + taxa_diaria/100)^252 - 1
+          const latestCDIAnnual = (Math.pow(1 + latestCDIDaily / 100, 252) - 1) * 100;
+          const roundedCDIAnnual = parseFloat(latestCDIAnnual.toFixed(2));
 
-            setParams(prev => ({ ...prev, cdiAnnual: roundedCDIAnnual }));
-            cdiUpdated = true;
-            console.log('✅ CDI atualizado:', `${roundedCDIAnnual}% a.a. (base diária: ${latestCDIDaily}%)`);
-          }
-
-          if (ipcaData.length > 0) {
-            const latestIPCA = parseFloat(ipcaData[ipcaData.length - 1].valor);
-            setParams(prev => ({ ...prev, ipcaAnnual: latestIPCA }));
-            ipcaUpdated = true;
-            console.log('✅ IPCA atualizado:', `${latestIPCA.toFixed(2)}% (12 meses)`);
-          }
-
-          if (cdiUpdated && ipcaUpdated) {
-            // Ambos atualizados com sucesso
-          } else if (!cdiUpdated && !ipcaUpdated) {
-            throw new Error('Nenhum dado disponível');
-          } else {
-            setRatesError(cdiUpdated ? 'IPCA não atualizado' : 'CDI não atualizado');
-          }
-        } else {
-          throw new Error('Dados não disponíveis');
+          setParams(prev => ({ ...prev, cdiAnnual: roundedCDIAnnual }));
+          cdiUpdated = true;
+          console.log('✅ CDI atualizado:', `${roundedCDIAnnual}% a.a. (base diária: ${latestCDIDaily}%)`);
         }
-      } catch (error) {
-        console.warn('⚠️ Não foi possível buscar taxas do BCB, usando valores padrão:', error);
-        setRatesError('Usando taxas padrão (não foi possível conectar ao Banco Central)');
-        // Mantém os valores padrão já definidos
-      } finally {
-        setLoadingRates(false);
-      }
-    };
 
+        if (ipcaData.length > 0) {
+          const latestIPCA = parseFloat(ipcaData[ipcaData.length - 1].valor);
+          setParams(prev => ({ ...prev, ipcaAnnual: latestIPCA }));
+          ipcaUpdated = true;
+          console.log('✅ IPCA atualizado:', `${latestIPCA.toFixed(2)}% (12 meses)`);
+        }
+
+        if (cdiUpdated && ipcaUpdated) {
+          setRatesSource('api');
+        } else if (!cdiUpdated && !ipcaUpdated) {
+          setRatesError('Não foi possível obter dados recentes do BCB. Usando valores padrão.');
+        } else {
+          setRatesSource('api'); // Pelo menos um atualizou
+        }
+      } else {
+        setRatesError('Erro ao conectar com API do Banco Central. Usando valores padrão.');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar taxas:', error);
+      setRatesError('Erro ao buscar taxas online. Usando valores padrão.');
+    } finally {
+      setLoadingRates(false);
+    }
+  };
+
+  // Buscar taxas do Banco Central ao iniciar
+  useEffect(() => {
     fetchEconomicRates();
   }, []); // Executa apenas uma vez ao carregar
 
@@ -747,7 +747,7 @@ function App() {
                   }}>
                     {result.name}
                     {(result.type === 'lci' || result.type === 'poupanca') && (
-                      <span style={{ display: 'block', fontSize: '9px', color: '#f59e0b', marginTop: '2px', fontWeight: 'normal' }}>
+                      <span style={{ display: 'block', fontSize: '9px', color: 'inherit', marginTop: '2px', fontWeight: 'normal', opacity: 0.8 }}>
                         Gross-up: {result.grossUp.toFixed(1)}%
                       </span>
                     )}
@@ -1165,9 +1165,13 @@ function App() {
                         Aporte (R$)
                       </label>
                       <input
-                        type="number"
-                        value={params.principal}
-                        onChange={(e) => setParams({ ...params, principal: Number(e.target.value) })}
+                        type="text"
+                        value={params.principal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '');
+                          const numberValue = Number(value) / 100;
+                          setParams({ ...params, principal: numberValue });
+                        }}
                         style={{
                           width: '100%',
                           backgroundColor: '#020617',
@@ -1209,9 +1213,12 @@ function App() {
                       </label>
                       <input
                         type="number"
-                        step="0.1"
+                        step={0.1}
                         value={params.cdiAnnual}
-                        onChange={(e) => setParams({ ...params, cdiAnnual: Number(e.target.value) })}
+                        onChange={(e) => {
+                          setParams({ ...params, cdiAnnual: Number(e.target.value) });
+                          setRatesSource('manual');
+                        }}
                         style={{
                           width: '100%',
                           backgroundColor: '#020617',
@@ -1230,6 +1237,7 @@ function App() {
                       </label>
                       <input
                         type="number"
+                        step={0.1}
                         value={params.cdbPercentOfCDI}
                         onChange={(e) => setParams({ ...params, cdbPercentOfCDI: Number(e.target.value) })}
                         style={{
@@ -1253,6 +1261,7 @@ function App() {
                       </label>
                       <input
                         type="number"
+                        step={0.1}
                         value={params.lciPercentOfCDI}
                         onChange={(e) => setParams({ ...params, lciPercentOfCDI: Number(e.target.value) })}
                         style={{
@@ -1273,7 +1282,7 @@ function App() {
                       </label>
                       <input
                         type="number"
-                        step="0.1"
+                        step={0.1}
                         value={params.preFixedAnnual}
                         onChange={(e) => setParams({ ...params, preFixedAnnual: Number(e.target.value) })}
                         style={{
@@ -1297,9 +1306,12 @@ function App() {
                       </label>
                       <input
                         type="number"
-                        step="0.1"
+                        step={0.1}
                         value={params.ipcaAnnual}
-                        onChange={(e) => setParams({ ...params, ipcaAnnual: Number(e.target.value) })}
+                        onChange={(e) => {
+                          setParams({ ...params, ipcaAnnual: Number(e.target.value) });
+                          setRatesSource('manual');
+                        }}
                         style={{
                           width: '100%',
                           backgroundColor: '#020617',
@@ -1318,7 +1330,7 @@ function App() {
                       </label>
                       <input
                         type="number"
-                        step="0.1"
+                        step={0.1}
                         value={params.ipcaPlusAnnual}
                         onChange={(e) => setParams({ ...params, ipcaPlusAnnual: Number(e.target.value) })}
                         style={{
@@ -1341,7 +1353,7 @@ function App() {
                     </label>
                     <input
                       type="number"
-                      step="0.1"
+                      step={0.1}
                       value={params.comparisonFund12MonthReturn}
                       onChange={(e) => setParams({ ...params, comparisonFund12MonthReturn: Number(e.target.value) })}
                       style={{
@@ -1399,56 +1411,42 @@ function App() {
                   </p>
                 </div>
 
-                {/* Indicador de Status das Taxas - NO FINAL */}
-                <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #1e293b' }}>
-                  {loadingRates ? (
-                    <div style={{
-                      fontSize: '9px',
-                      color: '#64748b',
-                      padding: '6px',
-                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <span>⏳</span>
-                      <span>Buscando taxas BCB...</span>
-                    </div>
-                  ) : ratesError ? (
-                    <div style={{
-                      fontSize: '9px',
-                      color: '#f59e0b',
-                      padding: '6px',
-                      backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                      border: '1px solid rgba(245, 158, 11, 0.2)',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <span>⚠️</span>
-                      <span>{ratesError}</span>
-                    </div>
-                  ) : (
-                    <div style={{
-                      fontSize: '9px',
-                      color: '#10b981',
-                      padding: '6px',
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      border: '1px solid rgba(16, 185, 129, 0.2)',
-                      borderRadius: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <span>✅</span>
-                      <span>Taxa CDI e IPCA a.a. atualizadas</span>
-                    </div>
+                {/* Status das Taxas - Interativo */}
+                <div
+                  onClick={fetchEconomicRates}
+                  style={{
+                    marginTop: 'auto',
+                    padding: '12px',
+                    backgroundColor: ratesSource === 'api' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                    borderTop: '1px solid #1e293b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = ratesSource === 'api' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ratesSource === 'api' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'}
+                  title={ratesError || "Clique para atualizar as taxas do Banco Central"}
+                >
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: ratesSource === 'api' ? '#10b981' : '#f59e0b',
+                    boxShadow: ratesSource === 'api' ? '0 0 8px #10b981' : 'none'
+                  }} />
+                  <div style={{ fontSize: '10px', color: ratesSource === 'api' ? '#10b981' : '#f59e0b', flex: 1 }}>
+                    {loadingRates ? 'Atualizando taxas...' : (
+                      ratesSource === 'api'
+                        ? 'Taxas CDI e IPCA atualizadas (BCB)'
+                        : 'Taxas manuais/padrão (Clique p/ atualizar)'
+                    )}
+                  </div>
+                  {!loadingRates && (
+                    <div style={{ fontSize: '10px', color: '#64748b' }}>↻</div>
                   )}
-                </div>
-              </div>
+                </div>          </div>
             </div>
 
             {/* Main Content */}
@@ -1742,7 +1740,7 @@ function App() {
                             <td style={{ textAlign: 'right', padding: '12px', color: '#10b981', fontWeight: '600' }}>
                               {res.monthlyReturnPercentOfCDI.toFixed(1)}%
                               {(res.type === 'lci' || res.type === 'poupanca') && (
-                                <span style={{ color: '#f59e0b', fontWeight: 'normal' }}>
+                                <span style={{ color: 'inherit', fontWeight: 'normal', opacity: 0.8 }}>
                                   {' | Gross-up: '}{res.grossUp.toFixed(1)}%
                                 </span>
                               )}
@@ -1875,7 +1873,7 @@ function App() {
                             <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 'normal' }}>
                               {res.monthlyReturnPercentOfCDI.toFixed(0)}% CDI
                               {(res.type === 'lci' || res.type === 'poupanca') && (
-                                <span style={{ color: '#f59e0b' }}> | Gross-up: {res.grossUp.toFixed(1)}%</span>
+                                <span style={{ color: 'inherit', opacity: 0.8 }}> | Gross-up: {res.grossUp.toFixed(1)}%</span>
                               )}
                             </div>
                           </th>
@@ -1919,7 +1917,7 @@ function App() {
                                       {monthData.accumulated.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                     </div>
                                     <div style={{ fontSize: '9px', color: '#64748b' }}>
-                                      IR: {(monthData.taxRate * 100).toFixed(1)}%
+                                      IR: {monthData.taxRate.toFixed(1)}%
                                     </div>
                                   </td>
                                 );
