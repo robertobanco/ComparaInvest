@@ -494,6 +494,8 @@ function App() {
 
   const [loadingRates, setLoadingRates] = useState(true);
   const [ratesError, setRatesError] = useState<string | null>(null);
+  const [monthlyTablePage, setMonthlyTablePage] = useState(0);
+  const monthsPerPage = 12; // Mostrar 12 meses por página
 
   // Remover overflow do body/html para evitar barras de rolagem duplicadas
   useEffect(() => {
@@ -1629,11 +1631,11 @@ function App() {
                               vs {userFund?.name}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 'bold', color: diff.value > 0 ? '#ef4444' : '#10b981' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 'bold', color: diff.value > 0 ? '#10b981' : '#ef4444' }}>
                                 {diff.value > 0 ? '+' : ''}{diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                               </span>
-                              <span style={{ fontSize: '10px', color: diff.value > 0 ? '#ef4444' : '#10b981' }}>
-                                ({diff.value > 0 ? '+' : ''}{diff.percent.toFixed(2)}%)
+                              <span style={{ fontSize: '10px', color: diff.value > 0 ? '#10b981' : '#ef4444' }}>
+                                {' '}({diff.percent > 0 ? '+' : ''}{diff.percent.toFixed(2)}%)
                               </span>
                             </div>
                           </div>
@@ -1732,7 +1734,7 @@ function App() {
                             <td style={{ textAlign: 'right', padding: '12px', color: '#10b981' }}>
                               +{res.netReturnPercent.toFixed(2)}%
                             </td>
-                            <td style={{ textAlign: 'right', padding: '12px', color: diff ? (diff.value > 0 ? '#ef4444' : '#10b981') : '#64748b' }}>
+                            <td style={{ textAlign: 'right', padding: '12px', color: diff ? (diff.value > 0 ? '#10b981' : '#ef4444') : '#64748b' }}>
                               {diff ? `${diff.value > 0 ? '+' : ''}${diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '-'}
                             </td>
                           </tr>
@@ -1740,6 +1742,162 @@ function App() {
                       })}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Nova Tabela: Comparação Mensal com Paginação */}
+              {activeView === 'table' && results.length > 0 && results[0].monthlyDetails.length > 0 && (
+                <div style={{
+                  backgroundColor: 'rgba(15, 23, 42, 0.5)',
+                  border: '1px solid #1e293b',
+                  borderRadius: '10px',
+                  padding: '20px',
+                  marginTop: '20px',
+                  overflowX: 'auto'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>
+                      📅 Evolução Mensal Comparada
+                    </h2>
+                    <div style={{
+                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '6px',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      color: '#3b82f6',
+                      fontWeight: '600'
+                    }}>
+                      Total: {params.months} meses
+                    </div>
+                  </div>
+
+                  {/* Tabela Mensal */}
+                  <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #334155' }}>
+                        <th style={{ textAlign: 'left', padding: '10px', color: '#94a3b8', position: 'sticky', left: 0, backgroundColor: '#0f172a', zIndex: 10 }}>
+                          Mês
+                        </th>
+                        {results.map((res) => (
+                          <th key={res.name} style={{
+                            textAlign: 'right',
+                            padding: '10px',
+                            color: res.isUserFund ? '#10b981' : '#94a3b8',
+                            fontWeight: res.isUserFund ? 'bold' : 'normal',
+                            minWidth: '120px'
+                          }}>
+                            <div>{res.name}</div>
+                            <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 'normal' }}>
+                              {res.monthlyReturnPercentOfCDI.toFixed(0)}% CDI
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const startMonth = monthlyTablePage * monthsPerPage;
+                        const endMonth = Math.min(startMonth + monthsPerPage, params.months);
+                        const monthsToShow = [];
+
+                        for (let month = startMonth; month < endMonth; month++) {
+                          monthsToShow.push(
+                            <tr key={month} style={{
+                              borderBottom: '1px solid #1e293b',
+                              backgroundColor: month % 2 === 0 ? 'rgba(30, 41, 59, 0.3)' : 'transparent'
+                            }}>
+                              <td style={{
+                                padding: '10px',
+                                color: '#e2e8f0',
+                                fontWeight: '600',
+                                position: 'sticky',
+                                left: 0,
+                                backgroundColor: month % 2 === 0 ? 'rgba(30, 41, 59, 0.3)' : '#0f172a',
+                                zIndex: 5
+                              }}>
+                                Mês {month + 1}
+                              </td>
+                              {results.map((res) => {
+                                const monthData = res.monthlyDetails[month];
+                                if (!monthData) return <td key={res.name}>-</td>;
+
+                                return (
+                                  <td key={res.name} style={{
+                                    textAlign: 'right',
+                                    padding: '10px',
+                                    color: '#cbd5e1'
+                                  }}>
+                                    <div style={{ fontWeight: '600', color: '#10b981' }}>
+                                      {monthData.accumulated.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                    </div>
+                                    <div style={{ fontSize: '9px', color: '#64748b' }}>
+                                      IR: {(monthData.taxRate * 100).toFixed(1)}%
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        }
+
+                        return monthsToShow;
+                      })()}
+                    </tbody>
+                  </table>
+
+                  {/* Controles de Paginação */}
+                  {params.months > monthsPerPage && (
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginTop: '20px',
+                      paddingTop: '20px',
+                      borderTop: '1px solid #1e293b'
+                    }}>
+                      <button
+                        onClick={() => setMonthlyTablePage(Math.max(0, monthlyTablePage - 1))}
+                        disabled={monthlyTablePage === 0}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: monthlyTablePage === 0 ? '#1e293b' : '#3b82f6',
+                          color: monthlyTablePage === 0 ? '#64748b' : 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: monthlyTablePage === 0 ? 'not-allowed' : 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        ← Anterior
+                      </button>
+
+                      <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>
+                        Meses {monthlyTablePage * monthsPerPage + 1} - {Math.min((monthlyTablePage + 1) * monthsPerPage, params.months)} de {params.months}
+                      </div>
+
+                      <button
+                        onClick={() => setMonthlyTablePage(Math.min(Math.ceil(params.months / monthsPerPage) - 1, monthlyTablePage + 1))}
+                        disabled={(monthlyTablePage + 1) * monthsPerPage >= params.months}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: (monthlyTablePage + 1) * monthsPerPage >= params.months ? '#1e293b' : '#3b82f6',
+                          color: (monthlyTablePage + 1) * monthsPerPage >= params.months ? '#64748b' : 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: (monthlyTablePage + 1) * monthsPerPage >= params.months ? 'not-allowed' : 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        Próxima →
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1906,7 +2064,7 @@ function App() {
                           <p style={{
                             fontSize: '10px',
                             fontWeight: 'bold',
-                            color: diff.value > 0 ? '#ef4444' : '#10b981',
+                            color: diff.value > 0 ? '#10b981' : '#ef4444',
                             margin: 0
                           }}>
                             {diff.value > 0 ? '+' : ''}{diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
