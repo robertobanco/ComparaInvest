@@ -429,10 +429,28 @@ const calculateSimulations = (params: SimulationParams): SimulationResult[] => {
 
   // 7. Poupança
   const poupancaMonthly = 0.005 + 0.0017;
-  const poupancaGross = principal * Math.pow(1 + poupancaMonthly, months);
   const poupancaAnnualGross = monthlyToAnnualCompound(poupancaMonthly);
   const poupancaGrossUp = calculateGrossUp(calculatePercentOfCDI(poupancaAnnualGross));
-  const poupancaEvolution = calculateCompoundEvolution(poupancaMonthly, false);
+
+  let poupancaGross: number;
+  let poupancaEvolution: { month: number; value: number }[];
+  let poupancaMonthlyPayoutGross: number;
+  let poupancaMonthlyPayoutNet: number;
+  let poupancaMonthlyDetails: MonthlyDetail[] = [];
+  if (params.globalPayoutMonthly) {
+    const poupancaPayoutResult = calculateWithMonthlyPayout(poupancaMonthly, false);
+    poupancaGross = poupancaPayoutResult.grossTotal;
+    poupancaEvolution = poupancaPayoutResult.evolution;
+    poupancaMonthlyPayoutGross = poupancaPayoutResult.monthlyPayoutGross;
+    poupancaMonthlyPayoutNet = poupancaPayoutResult.monthlyPayoutGross; // Sem IR
+    poupancaMonthlyDetails = poupancaPayoutResult.details;
+  } else {
+    poupancaGross = principal * Math.pow(1 + poupancaMonthly, months);
+    poupancaEvolution = calculateCompoundEvolution(poupancaMonthly, false);
+    poupancaMonthlyPayoutGross = 0;
+    poupancaMonthlyPayoutNet = 0;
+    poupancaMonthlyDetails = [];
+  }
 
   results.push({
     type: 'poupanca',
@@ -443,15 +461,15 @@ const calculateSimulations = (params: SimulationParams): SimulationResult[] => {
     netTotal: poupancaGross,
     netReturnPercent: ((poupancaGross - principal) / principal) * 100,
     monthlyReturnPercentOfCDI: calculatePercentOfCDI(poupancaAnnualGross),
-    monthlyPayoutGross: 0,
-    monthlyPayoutNet: 0,
+    monthlyPayoutGross: poupancaMonthlyPayoutGross,
+    monthlyPayoutNet: poupancaMonthlyPayoutNet,
     monthlyRateGross: poupancaMonthly * 100,
     monthlyRateNet: poupancaMonthly * 100,
     annualRateGross: poupancaAnnualGross,
     annualRateNet: poupancaAnnualGross,
     grossUp: poupancaGrossUp,
     isUserFund: false,
-    monthlyDetails: [],
+    monthlyDetails: poupancaMonthlyDetails,
     evolutionData: poupancaEvolution
   });
 
@@ -473,8 +491,8 @@ function App() {
     lciPercentOfCDI: 90,
     preFixedAnnual: 12.5,
     ipcaPlusAnnual: 6.0,
-    comparisonFund12MonthReturn: 14.0,
-    globalPayoutMonthly: false,
+    comparisonFund12MonthReturn: 15.0,
+    globalPayoutMonthly: true,
   });
 
   const [results, setResults] = useState<SimulationResult[]>([]);
@@ -495,7 +513,7 @@ function App() {
   const [loadingRates, setLoadingRates] = useState(true);
   const [ratesError, setRatesError] = useState<string | null>(null);
   const [monthlyTablePage, setMonthlyTablePage] = useState(0);
-  const monthsPerPage = 12; // Mostrar 12 meses por página
+  const [monthsPerPage, setMonthsPerPage] = useState(12); // Padrão: 12 meses por página
 
   // Remover overflow do body/html para evitar barras de rolagem duplicadas
   useEffect(() => {
@@ -724,10 +742,15 @@ function App() {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     display: '-webkit-box',
-                    WebkitLineClamp: 3,
+                    WebkitLineClamp: 4,
                     WebkitBoxOrient: 'vertical'
                   }}>
                     {result.name}
+                    {(result.type === 'lci' || result.type === 'poupanca') && (
+                      <span style={{ display: 'block', fontSize: '9px', color: '#f59e0b', marginTop: '2px', fontWeight: 'normal' }}>
+                        Gross-up: {result.grossUp.toFixed(1)}%
+                      </span>
+                    )}
                   </div>
                 </foreignObject>
               </g>
@@ -744,7 +767,7 @@ function App() {
 
     const width = 900;
     const height = 450;
-    const padding = { top: 40, right: 20, bottom: 80, left: 80 };
+    const padding = { top: 60, right: 20, bottom: 80, left: 80 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
@@ -861,6 +884,10 @@ function App() {
           {/* Title */}
           <text x={width / 2} y={25} fill="#e2e8f0" fontSize="18" fontWeight="bold" textAnchor="middle">
             📈 Evolução do Patrimônio
+          </text>
+          {/* Subtitle with parameters */}
+          <text x={width / 2} y={45} fill="#94a3b8" fontSize="11" textAnchor="middle">
+            Prazo {params.months} meses | IR {(getTaxRate(params.months * 30) * 100).toFixed(1)}% | CDI {params.cdiAnnual.toFixed(1)}% a.a. | Aporte {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
           </text>
         </svg>
 
@@ -1310,7 +1337,7 @@ function App() {
 
                   <div style={{ marginBottom: '10px' }}>
                     <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
-                      Fundo Comp. (% 12m)
+                      Fundos (Tx ult 12m)
                     </label>
                     <input
                       type="number"
@@ -1661,20 +1688,19 @@ function App() {
                   padding: '20px',
                   overflowX: 'auto'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', margin: 0, marginBottom: '8px' }}>
                       Comparação Detalhada
                     </h2>
                     <div style={{
-                      backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      fontSize: '11px',
+                      color: '#64748b',
+                      padding: '8px 12px',
+                      backgroundColor: 'rgba(30, 41, 59, 0.5)',
                       borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      color: '#10b981',
-                      fontWeight: '600'
+                      border: '1px solid #334155'
                     }}>
-                      📊 CDI Referência: {params.cdiAnnual.toFixed(2)}% a.a.
+                      Prazo {params.months} meses | IR {(getTaxRate(params.months * 30) * 100).toFixed(1)}% | CDI {params.cdiAnnual.toFixed(2)}% a.a. | Aporte {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
                     </div>
                   </div>
                   <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
@@ -1715,6 +1741,11 @@ function App() {
                             </td>
                             <td style={{ textAlign: 'right', padding: '12px', color: '#10b981', fontWeight: '600' }}>
                               {res.monthlyReturnPercentOfCDI.toFixed(1)}%
+                              {(res.type === 'lci' || res.type === 'poupanca') && (
+                                <span style={{ color: '#f59e0b', fontWeight: 'normal' }}>
+                                  {' | Gross-up: '}{res.grossUp.toFixed(1)}%
+                                </span>
+                              )}
                             </td>
                             <td style={{ textAlign: 'right', padding: '12px', color: '#cbd5e1' }}>
                               {res.monthlyRateGross.toFixed(3)}% / {res.monthlyRateNet.toFixed(3)}%
@@ -1755,20 +1786,73 @@ function App() {
                   marginTop: '20px',
                   overflowX: 'auto'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>
-                      📅 Evolução Mensal Comparada
-                    </h2>
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>
+                        📅 Evolução Mensal Comparada
+                      </h2>
+                      <button
+                        onClick={() => {
+                          // Função de exportação para Excel
+                          const exportToExcel = () => {
+                            // Criar CSV
+                            let csv = 'Mês,' + results.map(r => r.name).join(',') + '\n';
+
+                            for (let month = 0; month < params.months; month++) {
+                              const row = [`Mês ${month + 1}`];
+                              results.forEach(res => {
+                                const monthData = res.monthlyDetails[month];
+                                if (monthData) {
+                                  row.push(monthData.accumulated.toFixed(2));
+                                } else {
+                                  row.push('-');
+                                }
+                              });
+                              csv += row.join(',') + '\n';
+                            }
+
+                            // Download
+                            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                            const link = document.createElement('a');
+                            const url = URL.createObjectURL(blob);
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', `Evolucao_Mensal_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`);
+                            link.style.visibility = 'hidden';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          };
+                          exportToExcel();
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#10b981',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#059669'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
+                      >
+                        📊 Exportar Excel
+                      </button>
+                    </div>
                     <div style={{
-                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      fontSize: '11px',
+                      color: '#64748b',
+                      padding: '8px 12px',
+                      backgroundColor: 'rgba(30, 41, 59, 0.5)',
                       borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      color: '#3b82f6',
-                      fontWeight: '600'
+                      border: '1px solid #334155'
                     }}>
-                      Total: {params.months} meses
+                      Prazo {params.months} meses | IR {(getTaxRate(params.months * 30) * 100).toFixed(1)}% | CDI {params.cdiAnnual.toFixed(2)}% a.a. | Aporte {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
                     </div>
                   </div>
 
@@ -1790,6 +1874,9 @@ function App() {
                             <div>{res.name}</div>
                             <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 'normal' }}>
                               {res.monthlyReturnPercentOfCDI.toFixed(0)}% CDI
+                              {(res.type === 'lci' || res.type === 'poupanca') && (
+                                <span style={{ color: '#f59e0b' }}> | Gross-up: {res.grossUp.toFixed(1)}%</span>
+                              )}
                             </div>
                           </th>
                         ))}
@@ -1852,50 +1939,78 @@ function App() {
                       display: 'flex',
                       justifyContent: 'center',
                       alignItems: 'center',
-                      gap: '12px',
+                      gap: '24px',
                       marginTop: '20px',
                       paddingTop: '20px',
                       borderTop: '1px solid #1e293b'
                     }}>
-                      <button
-                        onClick={() => setMonthlyTablePage(Math.max(0, monthlyTablePage - 1))}
-                        disabled={monthlyTablePage === 0}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: monthlyTablePage === 0 ? '#1e293b' : '#3b82f6',
-                          color: monthlyTablePage === 0 ? '#64748b' : 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: monthlyTablePage === 0 ? 'not-allowed' : 'pointer',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        ← Anterior
-                      </button>
-
-                      <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>
-                        Meses {monthlyTablePage * monthsPerPage + 1} - {Math.min((monthlyTablePage + 1) * monthsPerPage, params.months)} de {params.months}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Meses por página:</span>
+                        <select
+                          value={monthsPerPage}
+                          onChange={(e) => {
+                            setMonthsPerPage(Number(e.target.value));
+                            setMonthlyTablePage(0); // Reset para primeira página
+                          }}
+                          style={{
+                            padding: '4px 8px',
+                            backgroundColor: '#1e293b',
+                            color: '#e2e8f0',
+                            border: '1px solid #334155',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value={12}>12</option>
+                          <option value={24}>24</option>
+                          <option value={36}>36</option>
+                          <option value={48}>48</option>
+                          <option value={60}>60</option>
+                        </select>
                       </div>
 
-                      <button
-                        onClick={() => setMonthlyTablePage(Math.min(Math.ceil(params.months / monthsPerPage) - 1, monthlyTablePage + 1))}
-                        disabled={(monthlyTablePage + 1) * monthsPerPage >= params.months}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: (monthlyTablePage + 1) * monthsPerPage >= params.months ? '#1e293b' : '#3b82f6',
-                          color: (monthlyTablePage + 1) * monthsPerPage >= params.months ? '#64748b' : 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: (monthlyTablePage + 1) * monthsPerPage >= params.months ? 'not-allowed' : 'pointer',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Próxima →
-                      </button>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <button
+                          onClick={() => setMonthlyTablePage(Math.max(0, monthlyTablePage - 1))}
+                          disabled={monthlyTablePage === 0}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: monthlyTablePage === 0 ? '#1e293b' : '#3b82f6',
+                            color: monthlyTablePage === 0 ? '#64748b' : 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: monthlyTablePage === 0 ? 'not-allowed' : 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          ← Anterior
+                        </button>
+
+                        <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>
+                          Meses {monthlyTablePage * monthsPerPage + 1} - {Math.min((monthlyTablePage + 1) * monthsPerPage, params.months)} de {params.months}
+                        </div>
+
+                        <button
+                          onClick={() => setMonthlyTablePage(Math.min(Math.ceil(params.months / monthsPerPage) - 1, monthlyTablePage + 1))}
+                          disabled={(monthlyTablePage + 1) * monthsPerPage >= params.months}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: (monthlyTablePage + 1) * monthsPerPage >= params.months ? '#1e293b' : '#3b82f6',
+                            color: (monthlyTablePage + 1) * monthsPerPage >= params.months ? '#64748b' : 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: (monthlyTablePage + 1) * monthsPerPage >= params.months ? 'not-allowed' : 'pointer',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          Próxima →
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
