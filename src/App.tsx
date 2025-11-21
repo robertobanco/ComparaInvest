@@ -173,7 +173,7 @@ const calculateSimulations = (params: SimulationParams): SimulationResult[] => {
 
   results.push({
     type: 'fund',
-    name: fundName,
+    name: `${fundName} ${(fundMonthlyRate * 100).toFixed(2)}% PRÉ`,
     grossTotal: fundResult.grossTotal,
     taxAmount: fundResult.totalTax,
     taxRate: periodTaxRate * 100,
@@ -504,6 +504,36 @@ function App() {
     includeChart: true,
     includeTable: true
   });
+
+  // --- THEME SYSTEM ---
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+
+  const themeColors = {
+    bg: theme === 'dark' ? '#020617' : '#f8fafc',
+    bgGradient: theme === 'dark' ? 'radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 100%)' : 'radial-gradient(circle at 50% 0%, #e2e8f0 0%, #f8fafc 100%)',
+    headerBg: theme === 'dark' ? 'rgba(2, 6, 23, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+    cardBg: theme === 'dark' ? '#1e293b' : '#ffffff',
+    cardBgTransparent: theme === 'dark' ? 'rgba(15, 23, 42, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+    border: theme === 'dark' ? '#1e293b' : '#e2e8f0',
+    borderStrong: theme === 'dark' ? '#334155' : '#cbd5e1',
+    text: theme === 'dark' ? '#e2e8f0' : '#0f172a',
+    textSecondary: theme === 'dark' ? '#94a3b8' : '#475569',
+    textMuted: theme === 'dark' ? '#64748b' : '#94a3b8',
+    accent: theme === 'dark' ? '#10b981' : '#059669',
+    accentBg: theme === 'dark' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)',
+    inputBg: theme === 'dark' ? '#020617' : '#f1f5f9',
+    tableHeaderBg: theme === 'dark' ? '#0f172a' : '#f8fafc',
+    tableRowEven: theme === 'dark' ? 'rgba(30, 41, 59, 0.3)' : 'rgba(241, 245, 249, 0.8)',
+    chartGrid: theme === 'dark' ? '#334155' : '#cbd5e1',
+    chartText: theme === 'dark' ? '#94a3b8' : '#64748b',
+    chartTooltipBg: theme === 'dark' ? '#1e293b' : '#ffffff',
+    shadow: theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    cardShadow: theme === 'dark' ? 'none' : '0 2px 4px rgba(0,0,0,0.05)',
+    pdfBg: theme === 'dark' ? '#020617' : '#ffffff',
+    pdfCardBg: theme === 'dark' ? 'rgba(15, 23, 42, 0.5)' : '#f9fafb',
+    pdfCardBorder: theme === 'dark' ? '#1e293b' : '#9ca3af',
+    pdfTextSecondary: theme === 'dark' ? '#94a3b8' : '#374151',
+  };
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -633,11 +663,11 @@ function App() {
   };
 
   // Renderizar gráfico de barras - Rendimento Líquido
-  const renderBarChart = () => {
+  const renderBarChart = (customWidth?: number, customHeight?: number) => {
     if (results.length === 0) return null;
 
-    const width = 900;
-    const height = 400;
+    const width = customWidth || 900;
+    const height = customHeight || 400;
     const padding = { top: 80, right: 40, bottom: 120, left: 80 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
@@ -648,18 +678,18 @@ function App() {
     return (
       <div style={{ marginBottom: '40px' }}>
         <svg width={width} height={height} style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          background: themeColors.bgGradient,
           borderRadius: '16px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+          boxShadow: themeColors.shadow
         }}>
           {/* Title */}
-          <text x={width / 2} y={30} fill="#e2e8f0" fontSize="18" fontWeight="bold" textAnchor="middle">
+          <text x={width / 2} y={30} fill={themeColors.text} fontSize="18" fontWeight="bold" textAnchor="middle">
             📊 Rendimento Líquido por Investimento
           </text>
 
           {/* Subtitle with parameters */}
-          <text x={width / 2} y={50} fill="#94a3b8" fontSize="11" textAnchor="middle">
-            Prazo {params.months} meses | IR {getTaxRate(params.months) * 100}% | CDI {params.cdiAnnual.toFixed(1)}% a.a. | Aporte {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
+          <text x={width / 2} y={50} fill={themeColors.textSecondary} fontSize="11" textAnchor="middle">
+            Prazo {params.months} meses | IR {getTaxRate(params.months * 30) * 100}% | CDI {params.cdiAnnual.toFixed(1)}% a.a. | Aporte {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
           </text>
 
           {/* Grid lines */}
@@ -673,12 +703,12 @@ function App() {
                   y1={y}
                   x2={width - padding.right}
                   y2={y}
-                  stroke="#334155"
+                  stroke={themeColors.chartGrid}
                   strokeWidth="1"
                   strokeDasharray="4,4"
                   opacity="0.5"
                 />
-                <text x={padding.left - 10} y={y + 4} fill="#94a3b8" fontSize="11" textAnchor="end" fontWeight="500">
+                <text x={padding.left - 10} y={y + 4} fill={themeColors.chartText} fontSize="11" textAnchor="end" fontWeight="500">
                   {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </text>
               </g>
@@ -719,7 +749,7 @@ function App() {
                 <text
                   x={x + barWidth / 2}
                   y={y - 8}
-                  fill="#e2e8f0"
+                  fill={themeColors.text}
                   fontSize="12"
                   fontWeight="bold"
                   textAnchor="middle"
@@ -734,7 +764,7 @@ function App() {
                   height={80}
                 >
                   <div style={{
-                    color: '#cbd5e1',
+                    color: themeColors.chartText,
                     fontSize: '10px',
                     fontWeight: result.isUserFund ? 'bold' : 'normal',
                     textAlign: 'center',
@@ -762,11 +792,11 @@ function App() {
   };
 
   // Renderizar gráfico SVG
-  const renderChart = () => {
+  const renderChart = (customWidth?: number, customHeight?: number) => {
     if (results.length === 0) return null;
 
-    const width = 900;
-    const height = 450;
+    const width = customWidth || 900;
+    const height = customHeight || 450;
     const padding = { top: 60, right: 20, bottom: 80, left: 80 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
@@ -781,15 +811,15 @@ function App() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
         <svg width={width} height={height} style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          background: themeColors.bgGradient,
           borderRadius: '16px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+          boxShadow: themeColors.shadow
         }}>
           {/* Gradient definitions */}
           <defs>
             <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#1e293b', stopOpacity: 0.8 }} />
-              <stop offset="100%" style={{ stopColor: '#0f172a', stopOpacity: 0.3 }} />
+              <stop offset="0%" style={{ stopColor: theme === 'dark' ? '#1e293b' : '#e2e8f0', stopOpacity: 0.8 }} />
+              <stop offset="100%" style={{ stopColor: theme === 'dark' ? '#0f172a' : '#f8fafc', stopOpacity: 0.3 }} />
             </linearGradient>
           </defs>
 
@@ -882,11 +912,11 @@ function App() {
           })}
 
           {/* Title */}
-          <text x={width / 2} y={25} fill="#e2e8f0" fontSize="18" fontWeight="bold" textAnchor="middle">
+          <text x={width / 2} y={25} fill={themeColors.text} fontSize="18" fontWeight="bold" textAnchor="middle">
             📈 Evolução do Patrimônio
           </text>
           {/* Subtitle with parameters */}
-          <text x={width / 2} y={45} fill="#94a3b8" fontSize="11" textAnchor="middle">
+          <text x={width / 2} y={45} fill={themeColors.textSecondary} fontSize="11" textAnchor="middle">
             Prazo {params.months} meses | IR {(getTaxRate(params.months * 30) * 100).toFixed(1)}% | CDI {params.cdiAnnual.toFixed(1)}% a.a. | Aporte {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
           </text>
         </svg>
@@ -994,22 +1024,25 @@ function App() {
       minHeight: '100vh',
       height: '100vh',
       fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-      backgroundColor: '#020617',
-      backgroundImage: 'radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 100%)',
+      backgroundColor: themeColors.bg,
+      backgroundImage: themeColors.bgGradient,
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      color: themeColors.text
     }}>
       {/* HEADER FIXO */}
       <div style={{
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
+        left: 0,
+        right: 0,
         zIndex: 100,
-        backgroundColor: 'rgba(2, 6, 23, 0.95)',
+        backgroundColor: themeColors.headerBg,
         backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid #1e293b',
+        borderBottom: `1px solid ${themeColors.border}`,
         padding: '16px 20px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+        boxShadow: themeColors.shadow
       }}>
         <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1033,14 +1066,12 @@ function App() {
                   fontSize: '24px',
                   fontWeight: 'bold',
                   margin: 0,
-                  background: 'linear-gradient(to right, #ffffff, #10b981)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  letterSpacing: '-0.03em',
+                  color: themeColors.text
                 }}>
-                  Comparador de Investimentos
+                  ComparaInvest
                 </h1>
-                <p style={{ color: '#64748b', fontSize: '11px', margin: '2px 0 0 0' }}>
+                <p style={{ color: themeColors.textMuted, fontSize: '11px', margin: '2px 0 0 0' }}>
                   Análise completa com IR regressivo e gross-up
                 </p>
               </div>
@@ -1048,15 +1079,35 @@ function App() {
 
             {/* View Toggle */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '8px', backgroundColor: '#1e293b', padding: '4px', borderRadius: '8px' }}>
+              {/* Theme Toggle */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                style={{
+                  padding: '8px',
+                  backgroundColor: themeColors.cardBg,
+                  border: `1px solid ${themeColors.border}`,
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: themeColors.text
+                }}
+                title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+
+              <div style={{ display: 'flex', gap: '8px', backgroundColor: themeColors.cardBg, padding: '4px', borderRadius: '8px', border: `1px solid ${themeColors.border}` }}>
                 {(['cards', 'chart', 'table'] as const).map((view) => (
                   <button
                     key={view}
                     onClick={() => setActiveView(view)}
                     style={{
                       padding: '8px 16px',
-                      backgroundColor: activeView === view ? '#10b981' : 'transparent',
-                      color: activeView === view ? '#020617' : '#94a3b8',
+                      backgroundColor: activeView === view ? themeColors.accent : 'transparent',
+                      color: activeView === view ? (theme === 'dark' ? '#020617' : 'white') : themeColors.textSecondary,
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
@@ -1099,24 +1150,24 @@ function App() {
       </div>
 
       {/* CONTEÚDO ROLÁVEL */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px', paddingTop: '100px' }}>
         <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
 
           <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px' }}>
             {/* Controls */}
             <div>
               <div style={{
-                backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                border: '1px solid #1e293b',
+                backgroundColor: themeColors.cardBgTransparent,
+                border: `1px solid ${themeColors.border}`,
                 borderRadius: '10px',
                 padding: '14px'
               }}>
-                <h2 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#10b981' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: themeColors.accent }}>
                   Seu Fundo
                 </h2>
 
                 <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', color: themeColors.textSecondary, marginBottom: '4px' }}>
                     Nome
                   </label>
                   <input
@@ -1125,11 +1176,11 @@ function App() {
                     onChange={(e) => setParams({ ...params, fundName: e.target.value })}
                     style={{
                       width: '100%',
-                      backgroundColor: '#020617',
-                      border: '1px solid #1e293b',
+                      backgroundColor: themeColors.inputBg,
+                      border: `1px solid ${themeColors.border}`,
                       borderRadius: '5px',
                       padding: '6px',
-                      color: 'white',
+                      color: themeColors.text,
                       fontSize: '12px',
                       boxSizing: 'border-box'
                     }}
@@ -1138,8 +1189,8 @@ function App() {
 
                 <div style={{ marginBottom: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>Taxa Mensal</span>
-                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#10b981' }}>
+                    <span style={{ fontSize: '11px', color: themeColors.textSecondary }}>Taxa Mensal</span>
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: themeColors.accent }}>
                       {params.fundRateMonthly.toFixed(1)}%
                     </span>
                   </div>
@@ -1150,18 +1201,18 @@ function App() {
                     step="0.1"
                     value={params.fundRateMonthly}
                     onChange={(e) => setParams({ ...params, fundRateMonthly: Number(e.target.value) })}
-                    style={{ width: '100%', accentColor: '#10b981' }}
+                    style={{ width: '100%', accentColor: themeColors.accent }}
                   />
                 </div>
 
-                <div style={{ borderTop: '1px solid #1e293b', paddingTop: '12px', marginTop: '12px' }}>
-                  <h2 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>
+                <div style={{ borderTop: `1px solid ${themeColors.border}`, paddingTop: '12px', marginTop: '12px' }}>
+                  <h2 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: themeColors.text }}>
                     Parâmetros
                   </h2>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', color: themeColors.textSecondary, marginBottom: '3px' }}>
                         Aporte (R$)
                       </label>
                       <input
@@ -1174,18 +1225,18 @@ function App() {
                         }}
                         style={{
                           width: '100%',
-                          backgroundColor: '#020617',
-                          border: '1px solid #1e293b',
+                          backgroundColor: themeColors.inputBg,
+                          border: `1px solid ${themeColors.border}`,
                           borderRadius: '5px',
                           padding: '5px',
-                          color: 'white',
+                          color: themeColors.text,
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', color: themeColors.textSecondary, marginBottom: '3px' }}>
                         Meses
                       </label>
                       <input
@@ -1194,11 +1245,11 @@ function App() {
                         onChange={(e) => setParams({ ...params, months: Number(e.target.value) })}
                         style={{
                           width: '100%',
-                          backgroundColor: '#020617',
-                          border: '1px solid #1e293b',
+                          backgroundColor: themeColors.inputBg,
+                          border: `1px solid ${themeColors.border}`,
                           borderRadius: '5px',
                           padding: '5px',
-                          color: 'white',
+                          color: themeColors.text,
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
@@ -1208,7 +1259,7 @@ function App() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', color: themeColors.textSecondary, marginBottom: '3px' }}>
                         CDI (% a.a.)
                       </label>
                       <input
@@ -1221,18 +1272,18 @@ function App() {
                         }}
                         style={{
                           width: '100%',
-                          backgroundColor: '#020617',
-                          border: '1px solid #1e293b',
+                          backgroundColor: themeColors.inputBg,
+                          border: `1px solid ${themeColors.border}`,
                           borderRadius: '5px',
                           padding: '5px',
-                          color: 'white',
+                          color: themeColors.text,
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', color: themeColors.textSecondary, marginBottom: '3px' }}>
                         CDB (% CDI)
                       </label>
                       <input
@@ -1242,11 +1293,11 @@ function App() {
                         onChange={(e) => setParams({ ...params, cdbPercentOfCDI: Number(e.target.value) })}
                         style={{
                           width: '100%',
-                          backgroundColor: '#020617',
-                          border: '1px solid #1e293b',
+                          backgroundColor: themeColors.inputBg,
+                          border: `1px solid ${themeColors.border}`,
                           borderRadius: '5px',
                           padding: '5px',
-                          color: 'white',
+                          color: themeColors.text,
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
@@ -1256,7 +1307,7 @@ function App() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', color: themeColors.textSecondary, marginBottom: '3px' }}>
                         LCI (% CDI)
                       </label>
                       <input
@@ -1266,18 +1317,18 @@ function App() {
                         onChange={(e) => setParams({ ...params, lciPercentOfCDI: Number(e.target.value) })}
                         style={{
                           width: '100%',
-                          backgroundColor: '#020617',
-                          border: '1px solid #1e293b',
+                          backgroundColor: themeColors.inputBg,
+                          border: `1px solid ${themeColors.border}`,
                           borderRadius: '5px',
                           padding: '5px',
-                          color: 'white',
+                          color: themeColors.text,
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', color: themeColors.textSecondary, marginBottom: '3px' }}>
                         Pré (% a.a.)
                       </label>
                       <input
@@ -1287,11 +1338,11 @@ function App() {
                         onChange={(e) => setParams({ ...params, preFixedAnnual: Number(e.target.value) })}
                         style={{
                           width: '100%',
-                          backgroundColor: '#020617',
-                          border: '1px solid #1e293b',
+                          backgroundColor: themeColors.inputBg,
+                          border: `1px solid ${themeColors.border}`,
                           borderRadius: '5px',
                           padding: '5px',
-                          color: 'white',
+                          color: themeColors.text,
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
@@ -1301,7 +1352,7 @@ function App() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', color: themeColors.textSecondary, marginBottom: '3px' }}>
                         IPCA (% a.a.)
                       </label>
                       <input
@@ -1314,11 +1365,11 @@ function App() {
                         }}
                         style={{
                           width: '100%',
-                          backgroundColor: '#020617',
-                          border: '1px solid #1e293b',
+                          backgroundColor: themeColors.inputBg,
+                          border: `1px solid ${themeColors.border}`,
                           borderRadius: '5px',
                           padding: '5px',
-                          color: 'white',
+                          color: themeColors.text,
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
@@ -1335,11 +1386,11 @@ function App() {
                         onChange={(e) => setParams({ ...params, ipcaPlusAnnual: Number(e.target.value) })}
                         style={{
                           width: '100%',
-                          backgroundColor: '#020617',
-                          border: '1px solid #1e293b',
+                          backgroundColor: themeColors.inputBg,
+                          border: `1px solid ${themeColors.border}`,
                           borderRadius: '5px',
                           padding: '5px',
-                          color: 'white',
+                          color: themeColors.text,
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
@@ -1373,19 +1424,19 @@ function App() {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    backgroundColor: '#020617',
+                    backgroundColor: themeColors.inputBg,
                     padding: '8px',
                     borderRadius: '5px',
-                    border: '1px solid #1e293b'
+                    border: `1px solid ${themeColors.border}`
                   }}>
-                    <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Pagamento Mensal</span>
+                    <span style={{ fontSize: '11px', color: themeColors.textSecondary }}>Pagamento Mensal</span>
                     <button
                       onClick={() => setParams({ ...params, globalPayoutMonthly: !params.globalPayoutMonthly })}
                       style={{
                         width: '40px',
                         height: '20px',
                         borderRadius: '10px',
-                        backgroundColor: params.globalPayoutMonthly ? '#10b981' : '#475569',
+                        backgroundColor: params.globalPayoutMonthly ? themeColors.accent : '#475569',
                         border: 'none',
                         cursor: 'pointer',
                         position: 'relative',
@@ -1404,7 +1455,7 @@ function App() {
                       }} />
                     </button>
                   </div>
-                  <p style={{ fontSize: '9px', color: '#64748b', marginTop: '4px', lineHeight: '1.2' }}>
+                  <p style={{ fontSize: '9px', color: themeColors.textMuted, marginTop: '4px', lineHeight: '1.2' }}>
                     {params.globalPayoutMonthly
                       ? "Juros Simples - IR regressivo"
                       : "Juros Compostos - IR no resgate"}
@@ -1417,8 +1468,8 @@ function App() {
                   style={{
                     marginTop: 'auto',
                     padding: '12px',
-                    backgroundColor: ratesSource === 'api' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                    borderTop: '1px solid #1e293b',
+                    backgroundColor: ratesSource === 'api' ? themeColors.accentBg : 'rgba(245, 158, 11, 0.1)',
+                    borderTop: `1px solid ${themeColors.border}`,
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
@@ -1426,17 +1477,17 @@ function App() {
                     transition: 'background-color 0.2s'
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = ratesSource === 'api' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ratesSource === 'api' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ratesSource === 'api' ? themeColors.accentBg : 'rgba(245, 158, 11, 0.1)'}
                   title={ratesError || "Clique para atualizar as taxas do Banco Central"}
                 >
                   <div style={{
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    backgroundColor: ratesSource === 'api' ? '#10b981' : '#f59e0b',
-                    boxShadow: ratesSource === 'api' ? '0 0 8px #10b981' : 'none'
+                    backgroundColor: ratesSource === 'api' ? themeColors.accent : '#f59e0b',
+                    boxShadow: ratesSource === 'api' ? `0 0 8px ${themeColors.accent}` : 'none'
                   }} />
-                  <div style={{ fontSize: '10px', color: ratesSource === 'api' ? '#10b981' : '#f59e0b', flex: 1 }}>
+                  <div style={{ fontSize: '10px', color: ratesSource === 'api' ? themeColors.accent : '#f59e0b', flex: 1 }}>
                     {loadingRates ? 'Atualizando taxas...' : (
                       ratesSource === 'api'
                         ? 'Taxas CDI e IPCA atualizadas (BCB)'
@@ -1444,7 +1495,7 @@ function App() {
                     )}
                   </div>
                   {!loadingRates && (
-                    <div style={{ fontSize: '10px', color: '#64748b' }}>↻</div>
+                    <div style={{ fontSize: '10px', color: themeColors.textMuted }}>↻</div>
                   )}
                 </div>          </div>
             </div>
@@ -1462,11 +1513,12 @@ function App() {
                           position: 'relative',
                           padding: '12px',
                           borderRadius: '10px',
-                          border: res.isUserFund ? '2px solid #10b981' : '1px solid #1e293b',
-                          backgroundColor: res.isUserFund ? 'rgba(16, 185, 129, 0.15)' : 'rgba(15, 23, 42, 0.4)',
+                          border: res.isUserFund ? `2px solid ${themeColors.accent}` : `1px solid ${themeColors.border}`,
+                          backgroundColor: res.isUserFund ? themeColors.accentBg : themeColors.cardBgTransparent,
                           transition: 'transform 0.2s',
                           display: 'flex',
-                          flexDirection: 'column'
+                          flexDirection: 'column',
+                          boxShadow: themeColors.cardShadow
                         }}
                         onMouseEnter={(e) => !res.isUserFund && (e.currentTarget.style.transform = 'translateY(-4px)')}
                         onMouseLeave={(e) => !res.isUserFund && (e.currentTarget.style.transform = 'translateY(0)')}
@@ -1506,31 +1558,31 @@ function App() {
                         {/* Aporte e Prazo - Simples */}
                         <div style={{
                           fontSize: '10px',
-                          color: '#64748b',
+                          color: themeColors.textMuted,
                           marginBottom: '10px',
                           paddingBottom: '8px',
-                          borderBottom: '1px solid #1e293b'
+                          borderBottom: `1px solid ${themeColors.border}`
                         }}>
                           {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })} • {params.months} meses
                         </div>
 
-                        <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px' }}>
+                        <div style={{ fontSize: '10px', color: themeColors.textMuted, marginBottom: '2px' }}>
                           {res.monthlyReturnPercentOfCDI.toFixed(1)}% CDI
                           {res.grossUp > 0 && ` • Gross-up: ${res.grossUp.toFixed(1)}%`}
                         </div>
 
-                        <div style={{ fontSize: '9px', color: '#94a3b8', marginBottom: '8px', lineHeight: '1.3' }}>
+                        <div style={{ fontSize: '9px', color: themeColors.textSecondary, marginBottom: '8px', lineHeight: '1.3' }}>
                           <div>
-                            <span style={{ color: '#64748b' }}>Mensal:</span>{' '}
-                            <span style={{ color: '#cbd5e1' }}>{res.monthlyRateGross.toFixed(3)}% <span style={{ fontSize: '8px' }}>bruto</span></span>
+                            <span style={{ color: themeColors.textMuted }}>Mensal:</span>{' '}
+                            <span style={{ color: themeColors.textSecondary }}>{res.monthlyRateGross.toFixed(3)}% <span style={{ fontSize: '8px' }}>bruto</span></span>
                             {' / '}
-                            <span style={{ color: '#10b981' }}>{res.monthlyRateNet.toFixed(3)}% <span style={{ fontSize: '8px' }}>líq</span></span>
+                            <span style={{ color: themeColors.accent }}>{res.monthlyRateNet.toFixed(3)}% <span style={{ fontSize: '8px' }}>líq</span></span>
                           </div>
                           <div>
-                            <span style={{ color: '#64748b' }}>Anual:</span>{' '}
-                            <span style={{ color: '#cbd5e1' }}>{res.annualRateGross.toFixed(2)}% <span style={{ fontSize: '8px' }}>bruto</span></span>
+                            <span style={{ color: themeColors.textMuted }}>Anual:</span>{' '}
+                            <span style={{ color: themeColors.textSecondary }}>{res.annualRateGross.toFixed(2)}% <span style={{ fontSize: '8px' }}>bruto</span></span>
                             {' / '}
-                            <span style={{ color: '#10b981' }}>{res.annualRateNet.toFixed(2)}% <span style={{ fontSize: '8px' }}>líq</span></span>
+                            <span style={{ color: themeColors.accent }}>{res.annualRateNet.toFixed(2)}% <span style={{ fontSize: '8px' }}>líq</span></span>
                           </div>
                         </div>
 
@@ -1542,7 +1594,7 @@ function App() {
                             marginBottom: '8px',
                             border: '1px solid rgba(16, 185, 129, 0.2)'
                           }}>
-                            <div style={{ fontSize: '9px', color: '#94a3b8', marginBottom: '1px' }}>Crédito Mensal</div>
+                            <div style={{ fontSize: '9px', color: themeColors.textMuted, marginBottom: '1px' }}>Crédito Mensal</div>
                             <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#10b981' }}>
                               {res.monthlyPayoutGross.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} bruto
                             </div>
@@ -1553,14 +1605,14 @@ function App() {
                         )}
 
                         <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-                          <span style={{ color: '#94a3b8' }}>Bruto</span>
-                          <span style={{ fontWeight: '600', color: '#e2e8f0' }}>
+                          <span style={{ color: themeColors.textMuted }}>Bruto</span>
+                          <span style={{ fontWeight: '600', color: themeColors.text }}>
                             {res.grossTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
                         </div>
 
                         <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '9px' }}>
-                          <span style={{ color: '#94a3b8' }}>
+                          <span style={{ color: themeColors.textMuted }}>
                             IR {res.taxRate > 0 ? `${res.taxRate.toFixed(1)}%` : ''}
                           </span>
                           <span style={{ fontWeight: '500', color: '#f87171' }}>
@@ -1570,7 +1622,7 @@ function App() {
 
                         <div style={{
                           paddingTop: '8px',
-                          borderTop: '1px solid rgba(100, 116, 139, 0.3)',
+                          borderTop: `1px solid ${themeColors.border}`,
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'flex-end',
@@ -1578,7 +1630,7 @@ function App() {
                         }}>
                           <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '500' }}>Líquido</span>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '15px', fontWeight: 'bold', color: 'white' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 'bold', color: themeColors.text }}>
                               {res.netTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </div>
                             <div style={{ fontSize: '9px', color: '#10b981', fontWeight: '500' }}>
@@ -1593,10 +1645,10 @@ function App() {
                             style={{
                               width: '100%',
                               padding: '5px',
-                              backgroundColor: '#1e293b',
-                              border: '1px solid #334155',
+                              backgroundColor: themeColors.cardBg,
+                              border: `1px solid ${themeColors.borderStrong}`,
                               borderRadius: '5px',
-                              color: '#94a3b8',
+                              color: themeColors.textSecondary,
                               fontSize: '9px',
                               cursor: 'pointer',
                               transition: 'all 0.2s',
@@ -1612,13 +1664,13 @@ function App() {
                             marginBottom: '8px',
                             maxHeight: '150px',
                             overflowY: 'auto',
-                            backgroundColor: '#0f172a',
+                            backgroundColor: themeColors.bg,
                             borderRadius: '5px',
                             padding: '6px'
                           }}>
-                            <table style={{ width: '100%', fontSize: '8px', color: '#cbd5e1' }}>
+                            <table style={{ width: '100%', fontSize: '8px', color: themeColors.textSecondary }}>
                               <thead>
-                                <tr style={{ borderBottom: '1px solid #334155' }}>
+                                <tr style={{ borderBottom: `1px solid ${themeColors.borderStrong}` }}>
                                   <th style={{ textAlign: 'left', padding: '3px' }}>Mês</th>
                                   <th style={{ textAlign: 'right', padding: '3px' }}>Bruto</th>
                                   <th style={{ textAlign: 'right', padding: '3px' }}>IR%</th>
@@ -1627,7 +1679,7 @@ function App() {
                               </thead>
                               <tbody>
                                 {res.monthlyDetails.map((detail) => (
-                                  <tr key={detail.month} style={{ borderBottom: '1px solid #1e293b' }}>
+                                  <tr key={detail.month} style={{ borderBottom: `1px solid ${themeColors.border}` }}>
                                     <td style={{ padding: '3px' }}>{detail.month}</td>
                                     <td style={{ textAlign: 'right', padding: '3px' }}>
                                       {detail.grossProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -1652,7 +1704,7 @@ function App() {
                             backgroundColor: diff.value > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                             border: `1px solid ${diff.value > 0 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
                           }}>
-                            <div style={{ fontSize: '9px', color: '#94a3b8', marginBottom: '2px' }}>
+                            <div style={{ fontSize: '9px', color: themeColors.textMuted, marginBottom: '2px' }}>
                               vs {userFund?.name}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -1680,47 +1732,47 @@ function App() {
 
               {activeView === 'table' && (
                 <div ref={tableRef} style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                  border: '1px solid #1e293b',
+                  backgroundColor: themeColors.cardBgTransparent,
+                  border: `1px solid ${themeColors.border}`,
                   borderRadius: '10px',
                   padding: '20px',
                   overflowX: 'auto'
                 }}>
                   <div style={{ marginBottom: '16px' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', margin: 0, marginBottom: '8px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: '600', color: themeColors.text, margin: 0, marginBottom: '8px' }}>
                       Comparação Detalhada
                     </h2>
                     <div style={{
                       fontSize: '11px',
-                      color: '#64748b',
+                      color: themeColors.textMuted,
                       padding: '8px 12px',
-                      backgroundColor: 'rgba(30, 41, 59, 0.5)',
+                      backgroundColor: themeColors.bg,
                       borderRadius: '6px',
-                      border: '1px solid #334155'
+                      border: `1px solid ${themeColors.borderStrong}`
                     }}>
                       Prazo {params.months} meses | IR {(getTaxRate(params.months * 30) * 100).toFixed(1)}% | CDI {params.cdiAnnual.toFixed(2)}% a.a. | Aporte {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
                     </div>
                   </div>
                   <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ borderBottom: '2px solid #334155' }}>
-                        <th style={{ textAlign: 'left', padding: '12px', color: '#94a3b8' }}>Investimento</th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#94a3b8' }}>
+                      <tr style={{ borderBottom: `2px solid ${themeColors.borderStrong}` }}>
+                        <th style={{ textAlign: 'left', padding: '12px', color: themeColors.textSecondary }}>Investimento</th>
+                        <th style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>
                           % CDI
                         </th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#94a3b8' }}>
+                        <th style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>
                           Taxa Mensal
-                          <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 'normal' }}>bruto / líquido</div>
+                          <div style={{ fontSize: '9px', color: themeColors.textMuted, fontWeight: 'normal' }}>bruto / líquido</div>
                         </th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#94a3b8' }}>
+                        <th style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>
                           Taxa Anual
-                          <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 'normal' }}>bruto / líquido</div>
+                          <div style={{ fontSize: '9px', color: themeColors.textMuted, fontWeight: 'normal' }}>bruto / líquido</div>
                         </th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#94a3b8' }}>Total Bruto</th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#94a3b8' }}>IR</th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#94a3b8' }}>Total Líquido</th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#94a3b8' }}>Rentabilidade</th>
-                        <th style={{ textAlign: 'right', padding: '12px', color: '#94a3b8' }}>vs {userFund?.name}</th>
+                        <th style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>Total Bruto</th>
+                        <th style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>IR</th>
+                        <th style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>Total Líquido</th>
+                        <th style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>Rentabilidade</th>
+                        <th style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>vs {userFund?.name}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1730,11 +1782,11 @@ function App() {
                           <tr
                             key={res.name}
                             style={{
-                              borderBottom: '1px solid #1e293b',
-                              backgroundColor: res.isUserFund ? 'rgba(16, 185, 129, 0.1)' : 'transparent'
+                              borderBottom: `1px solid ${themeColors.border}`,
+                              backgroundColor: res.isUserFund ? themeColors.accentBg : 'transparent'
                             }}
                           >
-                            <td style={{ padding: '12px', color: '#e2e8f0', fontWeight: res.isUserFund ? 'bold' : 'normal' }}>
+                            <td style={{ padding: '12px', color: themeColors.text, fontWeight: res.isUserFund ? 'bold' : 'normal' }}>
                               {res.name}
                             </td>
                             <td style={{ textAlign: 'right', padding: '12px', color: '#10b981', fontWeight: '600' }}>
@@ -1745,13 +1797,13 @@ function App() {
                                 </span>
                               )}
                             </td>
-                            <td style={{ textAlign: 'right', padding: '12px', color: '#cbd5e1' }}>
+                            <td style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>
                               {res.monthlyRateGross.toFixed(3)}% / {res.monthlyRateNet.toFixed(3)}%
                             </td>
-                            <td style={{ textAlign: 'right', padding: '12px', color: '#cbd5e1' }}>
+                            <td style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>
                               {res.annualRateGross.toFixed(2)}% / {res.annualRateNet.toFixed(2)}%
                             </td>
-                            <td style={{ textAlign: 'right', padding: '12px', color: '#cbd5e1' }}>
+                            <td style={{ textAlign: 'right', padding: '12px', color: themeColors.textSecondary }}>
                               {res.grossTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </td>
                             <td style={{ textAlign: 'right', padding: '12px', color: '#f87171' }}>
@@ -1763,7 +1815,7 @@ function App() {
                             <td style={{ textAlign: 'right', padding: '12px', color: '#10b981' }}>
                               +{res.netReturnPercent.toFixed(2)}%
                             </td>
-                            <td style={{ textAlign: 'right', padding: '12px', color: diff ? (diff.value > 0 ? '#10b981' : '#ef4444') : '#64748b' }}>
+                            <td style={{ textAlign: 'right', padding: '12px', color: diff ? (diff.value > 0 ? '#10b981' : '#ef4444') : themeColors.textMuted }}>
                               {diff ? `${diff.value > 0 ? '+' : ''}${diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '-'}
                             </td>
                           </tr>
@@ -1777,8 +1829,8 @@ function App() {
               {/* Nova Tabela: Comparação Mensal com Paginação */}
               {activeView === 'table' && results.length > 0 && results[0].monthlyDetails.length > 0 && (
                 <div style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                  border: '1px solid #1e293b',
+                  backgroundColor: themeColors.cardBgTransparent,
+                  border: `1px solid ${themeColors.border}`,
                   borderRadius: '10px',
                   padding: '20px',
                   marginTop: '20px',
@@ -1786,7 +1838,7 @@ function App() {
                 }}>
                   <div style={{ marginBottom: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>
+                      <h2 style={{ fontSize: '18px', fontWeight: '600', color: themeColors.text, margin: 0 }}>
                         📅 Evolução Mensal Comparada
                       </h2>
                       <button
@@ -1798,35 +1850,35 @@ function App() {
 
                             for (let month = 0; month < params.months; month++) {
                               const row = [`Mês ${month + 1}`];
-                              results.forEach(res => {
-                                const monthData = res.monthlyDetails[month];
-                                if (monthData) {
-                                  row.push(monthData.accumulated.toFixed(2));
+                              results.forEach(r => {
+                                if (r.monthlyDetails[month]) {
+                                  row.push(r.monthlyDetails[month].netProfit.toFixed(2).replace('.', ','));
                                 } else {
-                                  row.push('-');
+                                  row.push('');
                                 }
                               });
                               csv += row.join(',') + '\n';
                             }
 
-                            // Download
                             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                             const link = document.createElement('a');
-                            const url = URL.createObjectURL(blob);
-                            link.setAttribute('href', url);
-                            link.setAttribute('download', `Evolucao_Mensal_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`);
-                            link.style.visibility = 'hidden';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            if (link.download !== undefined) {
+                              const url = URL.createObjectURL(blob);
+                              link.setAttribute('href', url);
+                              link.setAttribute('download', 'evolucao_mensal.csv');
+                              link.style.visibility = 'hidden';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }
                           };
                           exportToExcel();
                         }}
                         style={{
-                          padding: '8px 16px',
-                          backgroundColor: '#10b981',
-                          color: 'white',
+                          backgroundColor: themeColors.accent,
+                          color: '#020617',
                           border: 'none',
+                          padding: '6px 12px',
                           borderRadius: '6px',
                           cursor: 'pointer',
                           fontSize: '12px',
@@ -1844,11 +1896,11 @@ function App() {
                     </div>
                     <div style={{
                       fontSize: '11px',
-                      color: '#64748b',
+                      color: themeColors.textMuted,
                       padding: '8px 12px',
-                      backgroundColor: 'rgba(30, 41, 59, 0.5)',
+                      backgroundColor: themeColors.bg,
                       borderRadius: '6px',
-                      border: '1px solid #334155'
+                      border: `1px solid ${themeColors.borderStrong}`
                     }}>
                       Prazo {params.months} meses | IR {(getTaxRate(params.months * 30) * 100).toFixed(1)}% | CDI {params.cdiAnnual.toFixed(2)}% a.a. | Aporte {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
                     </div>
@@ -1857,20 +1909,20 @@ function App() {
                   {/* Tabela Mensal */}
                   <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ borderBottom: '2px solid #334155' }}>
-                        <th style={{ textAlign: 'left', padding: '10px', color: '#94a3b8', position: 'sticky', left: 0, backgroundColor: '#0f172a', zIndex: 10 }}>
+                      <tr style={{ borderBottom: `2px solid ${themeColors.borderStrong}` }}>
+                        <th style={{ textAlign: 'left', padding: '10px', color: themeColors.textSecondary, position: 'sticky', left: 0, backgroundColor: themeColors.tableHeaderBg, zIndex: 10 }}>
                           Mês
                         </th>
                         {results.map((res) => (
                           <th key={res.name} style={{
                             textAlign: 'right',
                             padding: '10px',
-                            color: res.isUserFund ? '#10b981' : '#94a3b8',
+                            color: res.isUserFund ? themeColors.accent : themeColors.textSecondary,
                             fontWeight: res.isUserFund ? 'bold' : 'normal',
                             minWidth: '120px'
                           }}>
                             <div>{res.name}</div>
-                            <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 'normal' }}>
+                            <div style={{ fontSize: '9px', color: themeColors.textMuted, fontWeight: 'normal' }}>
                               {res.monthlyReturnPercentOfCDI.toFixed(0)}% CDI
                               {(res.type === 'lci' || res.type === 'poupanca') && (
                                 <span style={{ color: 'inherit', opacity: 0.8 }}> | Gross-up: {res.grossUp.toFixed(1)}%</span>
@@ -1889,16 +1941,16 @@ function App() {
                         for (let month = startMonth; month < endMonth; month++) {
                           monthsToShow.push(
                             <tr key={month} style={{
-                              borderBottom: '1px solid #1e293b',
-                              backgroundColor: month % 2 === 0 ? 'rgba(30, 41, 59, 0.3)' : 'transparent'
+                              borderBottom: `1px solid ${themeColors.border}`,
+                              backgroundColor: month % 2 === 0 ? themeColors.tableRowEven : 'transparent'
                             }}>
                               <td style={{
                                 padding: '10px',
-                                color: '#e2e8f0',
+                                color: themeColors.text,
                                 fontWeight: '600',
                                 position: 'sticky',
                                 left: 0,
-                                backgroundColor: month % 2 === 0 ? 'rgba(30, 41, 59, 0.3)' : '#0f172a',
+                                backgroundColor: month % 2 === 0 ? themeColors.tableRowEven : themeColors.tableHeaderBg,
                                 zIndex: 5
                               }}>
                                 Mês {month + 1}
@@ -2040,313 +2092,358 @@ function App() {
           top: 0,
           left: -10000,
           width: '1000px', // Largura fixa para A4
-          backgroundColor: '#0f172a',
-          color: 'white',
+          backgroundColor: themeColors.pdfBg,
+          color: themeColors.text,
           fontFamily: 'Inter, sans-serif',
           zIndex: -1
         }}>
 
-          {/* --- PÁGINA 1: HEADER, PARÂMETROS, CARDS, GRÁFICO BARRAS --- */}
-          <div ref={reportHeaderRef} style={{ padding: '40px', paddingBottom: '20px' }}>
+          {/* --- PÁGINA 1: HEADER, PARÂMETROS, CARDS --- */}
+          <div ref={reportHeaderRef} style={{ padding: '30px', paddingBottom: '20px', minHeight: '1100px', position: 'relative', backgroundColor: themeColors.pdfBg }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#10b981', margin: 0 }}>
-                  💰 ComparaInvest
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: themeColors.text, margin: 0 }}>
+                  Comparador de Investimentos
                 </h1>
-                <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                  Relatório de Simulação
+                <p style={{ color: themeColors.textSecondary, fontSize: '12px', margin: '4px 0 0 0' }}>
+                  Relatório Detalhado de Rentabilidade
                 </p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '10px', color: '#64748b', margin: 0 }}>Gerado em</p>
-                <p style={{ fontSize: '12px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>
+                <p style={{ fontSize: '10px', color: themeColors.textMuted, margin: 0 }}>Gerado em</p>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: themeColors.text, margin: 0 }}>
                   {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}
                 </p>
               </div>
             </div>
 
-            {/* Parâmetros - Com altura automática e padding seguro */}
+            {/* Parâmetros */}
             <div style={{
-              backgroundColor: 'rgba(30, 41, 59, 0.5)',
+              backgroundColor: themeColors.pdfCardBg,
               borderRadius: '8px',
               padding: '15px',
-              border: '1px solid #334155',
+              border: `1px solid ${themeColors.pdfCardBorder}`,
               marginBottom: '20px',
-              overflow: 'hidden' // Garantir que nada vaze
+              overflow: 'hidden'
             }}>
-              <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', marginBottom: '10px', borderBottom: '1px solid #334155', paddingBottom: '5px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '600', color: themeColors.text, marginBottom: '10px', borderBottom: `1px solid ${themeColors.borderStrong}`, paddingBottom: '5px' }}>
                 Parâmetros da Simulação
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 <div>
-                  <p style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '1px' }}>Aporte Inicial</p>
-                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#10b981' }}>
+                  <p style={{ fontSize: '10px', color: themeColors.pdfTextSecondary, marginBottom: '1px' }}>Aporte Inicial</p>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: themeColors.accent }}>
                     {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '1px' }}>Prazo</p>
-                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#e2e8f0' }}>{params.months} meses</p>
+                  <p style={{ fontSize: '10px', color: themeColors.pdfTextSecondary, marginBottom: '1px' }}>Prazo</p>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: themeColors.text }}>{params.months} meses</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '1px' }}>Taxa CDI</p>
-                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#e2e8f0' }}>{params.cdiAnnual.toFixed(2)}% a.a.</p>
+                  <p style={{ fontSize: '10px', color: themeColors.pdfTextSecondary, marginBottom: '1px' }}>Taxa CDI</p>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: themeColors.text }}>{params.cdiAnnual.toFixed(2)}% a.a.</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '1px' }}>IPCA</p>
-                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#e2e8f0' }}>{params.ipcaAnnual.toFixed(2)}% a.a.</p>
+                  <p style={{ fontSize: '10px', color: themeColors.pdfTextSecondary, marginBottom: '1px' }}>IPCA</p>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: themeColors.text }}>{params.ipcaAnnual.toFixed(2)}% a.a.</p>
                 </div>
                 <div>
-                  <p style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '1px' }}>Imposto de Renda</p>
-                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#e2e8f0' }}>
-                    {/* Correção: converter meses em dias para getTaxRate */}
+                  <p style={{ fontSize: '10px', color: themeColors.pdfTextSecondary, marginBottom: '1px' }}>Imposto de Renda</p>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: themeColors.text }}>
                     {(getTaxRate(params.months * 30) * 100).toFixed(1)}%
+                  </p>
+                </div>
+                <div>
+                  <p style={{ fontSize: '10px', color: themeColors.pdfTextSecondary, marginBottom: '1px' }}>Pagamento Mensal</p>
+                  <p style={{ fontSize: '12px', fontWeight: '600', color: themeColors.text }}>
+                    {params.globalPayoutMonthly ? 'Sim' : 'Não'}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Cards */}
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '10px', borderLeft: '3px solid #10b981', paddingLeft: '10px' }}>
-                Comparativo de Resultados
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                {results.map((res) => {
-                  const diff = getDifferential(res);
-                  return (
-                    <div key={res.name} style={{
-                      backgroundColor: '#1e293b',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      border: res.isUserFund ? '1px solid #10b981' : '1px solid #334155'
-                    }}>
-                      <div style={{ marginBottom: '8px', textAlign: 'center' }}>
+            {pdfOptions.includeCards && (
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: themeColors.text, marginBottom: '10px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
+                  Comparativo de Resultados
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                  {results.map((res) => {
+                    const diff = getDifferential(res);
+                    return (
+                      <div
+                        key={res.name}
+                        style={{
+                          position: 'relative',
+                          padding: '12px',
+                          borderRadius: '10px',
+                          border: res.isUserFund ? `2px solid ${themeColors.accent}` : `1px solid ${themeColors.pdfCardBorder}`,
+                          backgroundColor: res.isUserFund ? themeColors.accentBg : themeColors.pdfCardBg,
+                          display: 'flex',
+                          flexDirection: 'column'
+                        }}
+                      >
+                        {res.isUserFund && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '-9px',
+                            left: '10px',
+                            backgroundColor: themeColors.accent,
+                            color: '#020617',
+                            fontSize: '9px',
+                            fontWeight: 'bold',
+                            padding: '2px 8px',
+                            borderRadius: '8px'
+                          }}>
+                            SEU FUNDO
+                          </div>
+                        )}
+
                         <h3 style={{
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          color: res.isUserFund ? '#10b981' : '#3b82f6',
-                          margin: 0,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
+                          fontSize: '14px',
+                          fontWeight: '700',
+                          marginTop: res.isUserFund ? '6px' : '0',
+                          marginBottom: '8px',
+                          color: res.isUserFund ? themeColors.accent : themeColors.text,
+                          letterSpacing: '-0.02em'
                         }}>
                           {res.name}
                         </h3>
-                        <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
-                          {res.monthlyReturnPercentOfCDI.toFixed(1)}% CDI
-                          {/* Adicionado Gross-up se houver */}
-                          {res.grossUp > 0 && ` • Gross-up: ${res.grossUp.toFixed(1)}%`}
-                        </p>
-                      </div>
 
-                      <div style={{ marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>Bruto</span>
-                          <span style={{ fontSize: '10px', color: '#e2e8f0' }}>
+                        {/* Aporte e Prazo */}
+                        <div style={{
+                          fontSize: '10px',
+                          color: themeColors.pdfTextSecondary,
+                          marginBottom: '10px',
+                          paddingBottom: '8px',
+                          borderBottom: `1px solid ${themeColors.border}`
+                        }}>
+                          {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })} • {params.months} meses
+                        </div>
+
+                        <div style={{ fontSize: '10px', color: themeColors.pdfTextSecondary, marginBottom: '2px' }}>
+                          {res.monthlyReturnPercentOfCDI.toFixed(1)}% CDI
+                          {res.grossUp > 0 && ` • Gross-up: ${res.grossUp.toFixed(1)}%`}
+                        </div>
+
+                        <div style={{ fontSize: '9px', color: themeColors.pdfTextSecondary, marginBottom: '8px', lineHeight: '1.3' }}>
+                          <div>
+                            <span style={{ color: themeColors.pdfTextSecondary }}>Mensal:</span>{' '}
+                            <span style={{ color: themeColors.text }}>{res.monthlyRateGross.toFixed(3)}% <span style={{ fontSize: '8px' }}>bruto</span></span>
+                            {' / '}
+                            <span style={{ color: themeColors.accent }}>{res.monthlyRateNet.toFixed(3)}% <span style={{ fontSize: '8px' }}>líq</span></span>
+                          </div>
+                          <div>
+                            <span style={{ color: themeColors.pdfTextSecondary }}>Anual:</span>{' '}
+                            <span style={{ color: themeColors.text }}>{res.annualRateGross.toFixed(2)}% <span style={{ fontSize: '8px' }}>bruto</span></span>
+                            {' / '}
+                            <span style={{ color: themeColors.accent }}>{res.annualRateNet.toFixed(2)}% <span style={{ fontSize: '8px' }}>líq</span></span>
+                          </div>
+                        </div>
+
+                        {params.globalPayoutMonthly && res.monthlyPayoutGross > 0 && (
+                          <div style={{
+                            backgroundColor: themeColors.accentBg,
+                            padding: '6px',
+                            borderRadius: '5px',
+                            marginBottom: '8px',
+                            border: `1px solid ${themeColors.accent}`
+                          }}>
+                            <div style={{ fontSize: '9px', color: themeColors.pdfTextSecondary, marginBottom: '1px' }}>Crédito Mensal</div>
+                            <div style={{ fontSize: '11px', fontWeight: 'bold', color: themeColors.accent }}>
+                              {res.monthlyPayoutGross.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} bruto
+                            </div>
+                            <div style={{ fontSize: '9px', color: themeColors.accent }}>
+                              {res.monthlyPayoutNet.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} líq
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+                          <span style={{ color: themeColors.pdfTextSecondary }}>Bruto</span>
+                          <span style={{ fontWeight: '600', color: themeColors.text }}>
                             {res.grossTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>IR</span>
-                          <span style={{ fontSize: '10px', color: '#ef4444' }}>
+
+                        <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '9px' }}>
+                          <span style={{ color: themeColors.pdfTextSecondary }}>
+                            IR {res.taxRate > 0 ? `${res.taxRate.toFixed(1)}%` : ''}
+                          </span>
+                          <span style={{ fontWeight: '500', color: '#f87171' }}>
                             - {res.taxAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
                         </div>
-                        <div style={{ borderTop: '1px solid #334155', paddingTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '600', color: '#10b981' }}>Líquido</span>
-                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#e2e8f0' }}>
-                            {res.netTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </span>
-                        </div>
-                      </div>
 
-                      {!res.isUserFund && diff && (
                         <div style={{
-                          backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                          borderRadius: '4px',
-                          padding: '4px',
-                          textAlign: 'center',
-                          border: '1px solid #334155'
+                          paddingTop: '8px',
+                          borderTop: `1px solid ${themeColors.border}`,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-end',
+                          marginBottom: '8px'
                         }}>
-                          {/* Garantindo que o título apareça */}
-                          <p style={{ fontSize: '9px', color: '#94a3b8', marginBottom: '1px', display: 'block' }}>
-                            vs Seu Fundo
-                          </p>
-                          <p style={{
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            color: diff.value > 0 ? '#10b981' : '#ef4444',
-                            margin: 0
-                          }}>
-                            {diff.value > 0 ? '+' : ''}{diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </p>
+                          <span style={{ fontSize: '10px', color: themeColors.accent, fontWeight: '500' }}>Líquido</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 'bold', color: themeColors.text }}>
+                              {res.netTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                            <div style={{ fontSize: '9px', color: themeColors.accent, fontWeight: '500' }}>
+                              +{res.netReturnPercent.toFixed(2)}%
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+
+                        {!res.isUserFund && diff && (
+                          <div style={{
+                            padding: '6px 8px',
+                            borderRadius: '5px',
+                            marginTop: 'auto',
+                            backgroundColor: diff.value > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                            border: `1px solid ${diff.value > 0 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
+                          }}>
+                            <div style={{ fontSize: '9px', color: themeColors.pdfTextSecondary, marginBottom: '2px' }}>
+                              vs {userFund?.name}
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 'bold', color: diff.value > 0 ? themeColors.accent : '#ef4444' }}>
+                                {diff.value > 0 ? '+' : ''}{diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </span>
+                              <span style={{ fontSize: '10px', color: diff.value > 0 ? themeColors.accent : '#ef4444' }}>
+                                {' '}({diff.percent > 0 ? '+' : ''}{diff.percent.toFixed(2)}%)
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Gráfico de Barras (Rendimento Líquido) */}
-            <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '15px', borderLeft: '3px solid #10b981', paddingLeft: '10px' }}>
-                Rendimento Líquido
-              </h2>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                {/* Renderizar versão modificada do gráfico de barras para o PDF (sem rotação) */}
-                {(() => {
-                  const maxVal = Math.max(...results.map(r => r.netTotal - params.principal));
-                  const chartHeight = 250;
-                  const chartWidth = 800;
-                  const barWidth = 60;
-                  const gap = (chartWidth - (results.length * barWidth)) / (results.length + 1);
-
-                  return (
-                    <svg width={chartWidth} height={chartHeight + 40} viewBox={`0 0 ${chartWidth} ${chartHeight + 40}`}>
-                      {results.map((r, i) => {
-                        const val = r.netTotal - params.principal;
-                        const height = (val / maxVal) * (chartHeight - 60);
-                        const x = gap + i * (barWidth + gap);
-                        const y = chartHeight - height - 30;
-
-                        return (
-                          <g key={i}>
-                            <rect
-                              x={x}
-                              y={y}
-                              width={barWidth}
-                              height={height}
-                              fill={r.isUserFund ? '#10b981' : '#06b6d4'}
-                              rx={4}
-                            />
-                            <text
-                              x={x + barWidth / 2}
-                              y={y - 10}
-                              textAnchor="middle"
-                              fill="#e2e8f0"
-                              fontSize="12"
-                              fontWeight="bold"
-                            >
-                              {val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}
-                            </text>
-                            {/* Nome do Fundo - Horizontal e Quebrado se necessário */}
-                            <foreignObject x={x - 10} y={chartHeight - 20} width={barWidth + 20} height={50}>
-                              <div style={{
-                                fontSize: '10px',
-                                color: '#94a3b8',
-                                textAlign: 'center',
-                                lineHeight: '1.1',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical'
-                              }}>
-                                {r.name}
-                              </div>
-                            </foreignObject>
-                          </g>
-                        );
-                      })}
-                    </svg>
-                  );
-                })()}
-              </div>
-            </div>
           </div>
 
-          {/* --- PÁGINA 2: GRÁFICO EVOLUÇÃO, TABELA, DISCLAIMER --- */}
-          <div ref={reportChartsRef} style={{ padding: '40px', paddingTop: '20px' }}>
+          {/* --- PÁGINA 2: GRÁFICOS (BARRAS E EVOLUÇÃO), TABELA, DISCLAIMER --- */}
+          <div ref={reportChartsRef} style={{ padding: '30px', paddingTop: '20px', minHeight: '1100px', position: 'relative', backgroundColor: themeColors.pdfBg }}>
+
+            {/* Gráfico de Barras (Rendimento Líquido) */}
+            {pdfOptions.includeChart && (
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: themeColors.text, marginBottom: '10px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
+                  Rendimento Líquido
+                </h2>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  {renderBarChart(900, 350)}
+                </div>
+              </div>
+            )}
 
             {/* Gráfico de Evolução */}
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '15px', borderLeft: '3px solid #10b981', paddingLeft: '10px' }}>
-                Evolução Patrimonial
-              </h2>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                {renderChart()}
+            {pdfOptions.includeChart && (
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: themeColors.text, marginBottom: '10px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
+                  Evolução Patrimonial
+                </h2>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  {renderChart(900, 350)}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Tabela */}
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '15px', borderLeft: '3px solid #10b981', paddingLeft: '10px' }}>
-                Detalhamento
-              </h2>
-              <div style={{
-                backgroundColor: '#1e293b',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                border: '1px solid #334155'
-              }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
-                      <th style={{ padding: '8px', textAlign: 'left', color: '#94a3b8' }}>Investimento</th>
-                      <th style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>CDI Ref.</th>
-                      <th style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>% CDI</th>
-                      <th style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>Taxa a.a. (Líq)</th>
-                      <th style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>Total Bruto</th>
-                      <th style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>IR</th>
-                      <th style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>Total Líquido</th>
-                      <th style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>Rentab.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((res, idx) => (
-                      <tr key={res.name} style={{
-                        borderBottom: '1px solid #334155',
-                        backgroundColor: idx % 2 === 0 ? 'rgba(30, 41, 59, 0.3)' : 'transparent'
-                      }}>
-                        <td style={{ padding: '8px', fontWeight: '600', color: res.isUserFund ? '#10b981' : '#e2e8f0' }}>
-                          {res.name}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#64748b' }}>
-                          {params.cdiAnnual.toFixed(2)}%
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#cbd5e1' }}>
-                          {res.monthlyReturnPercentOfCDI.toFixed(0)}%
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#cbd5e1' }}>
-                          {res.annualRateNet.toFixed(2)}%
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#cbd5e1' }}>
-                          {res.grossTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#ef4444' }}>
-                          {res.taxAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: '#10b981' }}>
-                          {res.netTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#10b981' }}>
-                          {res.netReturnPercent.toFixed(1)}%
-                        </td>
+            {pdfOptions.includeTable && (
+              <div style={{ marginBottom: '30px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: themeColors.text, marginBottom: '15px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
+                  Detalhamento
+                </h2>
+                <div style={{
+                  backgroundColor: themeColors.pdfCardBg,
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  border: `1px solid ${themeColors.pdfCardBorder}`
+                }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: themeColors.tableHeaderBg, borderBottom: `1px solid ${themeColors.borderStrong}` }}>
+                        <th style={{ padding: '8px', textAlign: 'left', color: themeColors.textSecondary }}>Investimento</th>
+                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>% CDI</th>
+                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Taxa Mensal (Líq)</th>
+                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Taxa Anual (Líq)</th>
+                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Total Bruto</th>
+                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>IR</th>
+                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Total Líquido</th>
+                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Rentabilidade</th>
+                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>vs Seu Fundo</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                    </thead>
+                    <tbody>
+                      {results.map((res, idx) => {
+                        const diff = getDifferential(res);
+                        return (
+                          <tr key={res.name} style={{
+                            borderBottom: `1px solid ${themeColors.border}`,
+                            backgroundColor: idx % 2 === 0 ? themeColors.tableRowEven : 'transparent'
+                          }}>
+                            <td style={{ padding: '8px', fontWeight: '600', color: res.isUserFund ? themeColors.accent : themeColors.text }}>
+                              {res.name}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.accent }}>
+                              {res.monthlyReturnPercentOfCDI.toFixed(0)}%
+                              {(res.type === 'lci' || res.type === 'poupanca') && (
+                                <span style={{ color: themeColors.textMuted, fontWeight: 'normal', fontSize: '8px', display: 'block' }}>
+                                  (Gross-up: {res.grossUp.toFixed(1)}%)
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
+                              {res.monthlyRateNet.toFixed(3)}%
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
+                              {res.annualRateNet.toFixed(2)}%
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
+                              {res.grossTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: '#ef4444' }}>
+                              {res.taxAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: themeColors.accent }}>
+                              {res.netTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.accent }}>
+                              +{res.netReturnPercent.toFixed(2)}%
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: diff ? (diff.value > 0 ? themeColors.accent : '#ef4444') : themeColors.textMuted }}>
+                              {diff ? `${diff.value > 0 ? '+' : ''}${diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div></div>
+            )}
 
             {/* Disclaimer Compacto */}
             <div style={{
               padding: '15px',
-              backgroundColor: 'rgba(30, 41, 59, 0.5)',
-              borderTop: '1px solid #334155',
-              borderRadius: '8px'
+              backgroundColor: themeColors.pdfCardBg,
+              borderTop: `1px solid ${themeColors.border}`,
+              borderRadius: '8px',
+              marginTop: 'auto'
             }}>
               <h4 style={{ fontSize: '10px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '5px', marginTop: 0 }}>
                 ⚠️ AVISOS IMPORTANTES
               </h4>
-              <p style={{ fontSize: '8px', color: '#94a3b8', lineHeight: '1.3', margin: 0, textAlign: 'justify' }}>
+              <p style={{ fontSize: '8px', color: themeColors.textSecondary, lineHeight: '1.3', margin: 0, textAlign: 'justify' }}>
                 Este simulador tem caráter estritamente educacional. Os resultados são estimativas baseadas nos parâmetros informados e condições de mercado atuais, não garantindo rentabilidade futura. As alíquotas de IR seguem a tabela regressiva vigente. O cálculo não considera custos operacionais (corretagem/custódia). Investimentos em renda variável ou atrelados à inflação possuem riscos. FGC cobre até R$ 250.000/CPF/Instituição. Consulte um profissional certificado antes de investir.
               </p>
               <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                <p style={{ fontSize: '8px', color: '#64748b', margin: 0 }}>
+                <p style={{ fontSize: '8px', color: themeColors.textMuted, margin: 0 }}>
                   ComparaInvest © {new Date().getFullYear()}
                 </p>
               </div>
@@ -2371,24 +2468,42 @@ function App() {
           zIndex: 1000
         }}>
           <div style={{
-            backgroundColor: '#1e293b',
+            backgroundColor: themeColors.cardBg,
             borderRadius: '16px',
             padding: '32px',
             maxWidth: '500px',
             width: '90%',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+            boxShadow: themeColors.shadow,
+            border: `1px solid ${themeColors.border}`
           }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', color: '#e2e8f0' }}>
-              📄 Gerar Relatório PDF
-            </h2>
-            <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: themeColors.text }}>
+                📄 Gerar Relatório PDF
+              </h2>
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                style={{
+                  padding: '8px 12px',
+                  backgroundColor: themeColors.inputBg,
+                  border: `1px solid ${themeColors.border}`,
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  transition: 'all 0.2s'
+                }}
+                title={theme === 'dark' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+            </div>
+            <p style={{ fontSize: '14px', color: themeColors.textSecondary, marginBottom: '24px' }}>
               Selecione o que deseja incluir no relatório:
             </p>
 
             <div style={{ marginBottom: '24px' }}>
               {[
                 { key: 'includeCards', label: '📊 Cards de Comparação' },
-                { key: 'includeChart', label: '📈 Gráfico de Evolução' },
+                { key: 'includeChart', label: '📈 Gráficos (Barras e Evolução)' },
                 { key: 'includeTable', label: '📋 Tabela Detalhada' }
               ].map(({ key, label }) => (
                 <label
@@ -2398,8 +2513,8 @@ function App() {
                     alignItems: 'center',
                     padding: '12px',
                     marginBottom: '8px',
-                    backgroundColor: pdfOptions[key as keyof typeof pdfOptions] ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15, 23, 42, 0.5)',
-                    border: `2px solid ${pdfOptions[key as keyof typeof pdfOptions] ? '#10b981' : '#334155'}`,
+                    backgroundColor: pdfOptions[key as keyof typeof pdfOptions] ? themeColors.accentBg : themeColors.cardBgTransparent,
+                    border: `2px solid ${pdfOptions[key as keyof typeof pdfOptions] ? themeColors.accent : themeColors.border}`,
                     borderRadius: '8px',
                     cursor: 'pointer',
                     transition: 'all 0.2s'
@@ -2411,7 +2526,7 @@ function App() {
                     onChange={(e) => setPdfOptions({ ...pdfOptions, [key]: e.target.checked })}
                     style={{ marginRight: '12px', width: '18px', height: '18px', cursor: 'pointer' }}
                   />
-                  <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '500' }}>{label}</span>
+                  <span style={{ fontSize: '14px', color: themeColors.text, fontWeight: '500' }}>{label}</span>
                 </label>
               ))}
             </div>
@@ -2422,17 +2537,17 @@ function App() {
                 style={{
                   flex: 1,
                   padding: '12px',
-                  backgroundColor: '#334155',
-                  color: '#e2e8f0',
-                  border: 'none',
+                  backgroundColor: themeColors.inputBg,
+                  color: themeColors.text,
+                  border: `1px solid ${themeColors.border}`,
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: '600',
                   transition: 'all 0.2s'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#475569'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#334155'}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
                 Cancelar
               </button>
