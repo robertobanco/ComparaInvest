@@ -486,7 +486,7 @@ function App() {
     cdiAnnual: 14.90,
     ipcaAnnual: 5.17,
     fundName: 'Meu Fundo',
-    fundRateMonthly: 1.5,
+    fundRateMonthly: 1.4,
     cdbPercentOfCDI: 105,
     lciPercentOfCDI: 90,
     preFixedAnnual: 12.5,
@@ -1191,14 +1191,14 @@ function App() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                     <span style={{ fontSize: '11px', color: themeColors.textSecondary }}>Taxa Mensal</span>
                     <span style={{ fontSize: '11px', fontWeight: 'bold', color: themeColors.accent }}>
-                      {params.fundRateMonthly.toFixed(1)}%
+                      {params.fundRateMonthly.toFixed(2)}%
                     </span>
                   </div>
                   <input
                     type="range"
-                    min="0.1"
+                    min="1.0"
                     max="2.0"
-                    step="0.1"
+                    step="0.10"
                     value={params.fundRateMonthly}
                     onChange={(e) => setParams({ ...params, fundRateMonthly: Number(e.target.value) })}
                     style={{ width: '100%', accentColor: themeColors.accent }}
@@ -1919,7 +1919,7 @@ function App() {
                             padding: '10px',
                             color: res.isUserFund ? themeColors.accent : themeColors.textSecondary,
                             fontWeight: res.isUserFund ? 'bold' : 'normal',
-                            minWidth: '120px'
+                            minWidth: '140px'
                           }}>
                             <div>{res.name}</div>
                             <div style={{ fontSize: '9px', color: themeColors.textMuted, fontWeight: 'normal' }}>
@@ -1963,12 +1963,15 @@ function App() {
                                   <td key={res.name} style={{
                                     textAlign: 'right',
                                     padding: '10px',
-                                    color: '#cbd5e1'
+                                    color: themeColors.text
                                   }}>
-                                    <div style={{ fontWeight: '600', color: '#10b981' }}>
-                                      {monthData.accumulated.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                    <div style={{ fontWeight: '600', color: themeColors.accent, fontSize: '11px' }}>
+                                      {monthData.netProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </div>
-                                    <div style={{ fontSize: '9px', color: '#64748b' }}>
+                                    <div style={{ fontSize: '9px', color: themeColors.textMuted, marginTop: '2px' }}>
+                                      Acum: {monthData.accumulated.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                    </div>
+                                    <div style={{ fontSize: '9px', color: themeColors.textMuted }}>
                                       IR: {monthData.taxRate.toFixed(1)}%
                                     </div>
                                   </td>
