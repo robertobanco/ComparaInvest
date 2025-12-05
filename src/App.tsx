@@ -1196,7 +1196,7 @@ function App() {
                   </div>
                   <input
                     type="range"
-                    min="1.0"
+                    min="0.1"
                     max="2.0"
                     step="0.1"
                     value={params.fundRateMonthly}
@@ -1540,7 +1540,7 @@ function App() {
                         )}
 
                         <h3 style={{
-                          fontSize: '14px',
+                          fontSize: '15px',
                           fontWeight: '700',
                           marginTop: res.isUserFund ? '6px' : '0',
                           marginBottom: '8px',
@@ -1557,7 +1557,7 @@ function App() {
 
                         {/* Aporte e Prazo - Simples */}
                         <div style={{
-                          fontSize: '10px',
+                          fontSize: '11px',
                           color: themeColors.textMuted,
                           marginBottom: '10px',
                           paddingBottom: '8px',
@@ -1566,23 +1566,23 @@ function App() {
                           {params.principal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })} • {params.months} meses
                         </div>
 
-                        <div style={{ fontSize: '10px', color: themeColors.textMuted, marginBottom: '2px' }}>
+                        <div style={{ fontSize: '11px', color: themeColors.textMuted, marginBottom: '2px' }}>
                           {res.monthlyReturnPercentOfCDI.toFixed(1)}% CDI
                           {res.grossUp > 0 && ` • Gross-up: ${res.grossUp.toFixed(1)}%`}
                         </div>
 
-                        <div style={{ fontSize: '9px', color: themeColors.textSecondary, marginBottom: '8px', lineHeight: '1.3' }}>
+                        <div style={{ fontSize: '11px', color: themeColors.textSecondary, marginBottom: '8px', lineHeight: '1.3' }}>
                           <div>
                             <span style={{ color: themeColors.textMuted }}>Mensal:</span>{' '}
-                            <span style={{ color: themeColors.textSecondary }}>{res.monthlyRateGross.toFixed(3)}% <span style={{ fontSize: '8px' }}>bruto</span></span>
+                            <span style={{ color: themeColors.textSecondary }}>{res.monthlyRateGross.toFixed(3)}% <span style={{ fontSize: '10px' }}>bruto</span></span>
                             {' / '}
-                            <span style={{ color: themeColors.accent }}>{res.monthlyRateNet.toFixed(3)}% <span style={{ fontSize: '8px' }}>líq</span></span>
+                            <span style={{ color: themeColors.accent }}>{res.monthlyRateNet.toFixed(3)}% <span style={{ fontSize: '10px' }}>líq</span></span>
                           </div>
                           <div>
                             <span style={{ color: themeColors.textMuted }}>Anual:</span>{' '}
-                            <span style={{ color: themeColors.textSecondary }}>{res.annualRateGross.toFixed(2)}% <span style={{ fontSize: '8px' }}>bruto</span></span>
+                            <span style={{ color: themeColors.textSecondary }}>{res.annualRateGross.toFixed(2)}% <span style={{ fontSize: '10px' }}>bruto</span></span>
                             {' / '}
-                            <span style={{ color: themeColors.accent }}>{res.annualRateNet.toFixed(2)}% <span style={{ fontSize: '8px' }}>líq</span></span>
+                            <span style={{ color: themeColors.accent }}>{res.annualRateNet.toFixed(2)}% <span style={{ fontSize: '10px' }}>líq</span></span>
                           </div>
                         </div>
 
@@ -1594,24 +1594,24 @@ function App() {
                             marginBottom: '8px',
                             border: '1px solid rgba(16, 185, 129, 0.2)'
                           }}>
-                            <div style={{ fontSize: '9px', color: themeColors.textMuted, marginBottom: '1px' }}>Crédito Mensal</div>
-                            <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#10b981' }}>
+                            <div style={{ fontSize: '10px', color: themeColors.textMuted, marginBottom: '1px' }}>Crédito Mensal</div>
+                            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#10b981' }}>
                               {res.monthlyPayoutGross.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} bruto
                             </div>
-                            <div style={{ fontSize: '9px', color: '#10b981' }}>
+                            <div style={{ fontSize: '10px', color: '#10b981' }}>
                               {res.monthlyPayoutNet.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} líq
                             </div>
                           </div>
                         )}
 
-                        <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+                        <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                           <span style={{ color: themeColors.textMuted }}>Bruto</span>
                           <span style={{ fontWeight: '600', color: themeColors.text }}>
                             {res.grossTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                           </span>
                         </div>
 
-                        <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '9px' }}>
+                        <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                           <span style={{ color: themeColors.textMuted }}>
                             IR {res.taxRate > 0 ? `${res.taxRate.toFixed(1)}%` : ''}
                           </span>
@@ -1628,12 +1628,12 @@ function App() {
                           alignItems: 'flex-end',
                           marginBottom: '8px'
                         }}>
-                          <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '500' }}>Líquido</span>
+                          <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '500' }}>Líquido</span>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '15px', fontWeight: 'bold', color: themeColors.text }}>
+                            <div style={{ fontSize: '16px', fontWeight: 'bold', color: themeColors.text }}>
                               {res.netTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                             </div>
-                            <div style={{ fontSize: '9px', color: '#10b981', fontWeight: '500' }}>
+                            <div style={{ fontSize: '11px', color: '#10b981', fontWeight: '500' }}>
                               +{res.netReturnPercent.toFixed(2)}%
                             </div>
                           </div>
@@ -1649,7 +1649,7 @@ function App() {
                               border: `1px solid ${themeColors.borderStrong}`,
                               borderRadius: '5px',
                               color: themeColors.textSecondary,
-                              fontSize: '9px',
+                              fontSize: '10px',
                               cursor: 'pointer',
                               transition: 'all 0.2s',
                               marginBottom: '8px'
@@ -1704,14 +1704,14 @@ function App() {
                             backgroundColor: diff.value > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                             border: `1px solid ${diff.value > 0 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
                           }}>
-                            <div style={{ fontSize: '9px', color: themeColors.textMuted, marginBottom: '2px' }}>
+                            <div style={{ fontSize: '10px', color: themeColors.textMuted, marginBottom: '2px' }}>
                               vs {userFund?.name}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 'bold', color: diff.value > 0 ? '#10b981' : '#ef4444' }}>
+                              <span style={{ fontSize: '14px', fontWeight: 'bold', color: diff.value > 0 ? '#10b981' : '#ef4444' }}>
                                 {diff.value > 0 ? '+' : ''}{diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                               </span>
-                              <span style={{ fontSize: '10px', color: diff.value > 0 ? '#10b981' : '#ef4444' }}>
+                              <span style={{ fontSize: '11px', color: diff.value > 0 ? '#10b981' : '#ef4444' }}>
                                 {' '}({diff.percent > 0 ? '+' : ''}{diff.percent.toFixed(2)}%)
                               </span>
                             </div>
@@ -1883,7 +1883,7 @@ function App() {
                           cursor: 'pointer',
                           fontSize: '12px',
                           fontWeight: '600',
-                          display: 'flex',
+                          display: 'none',
                           alignItems: 'center',
                           gap: '6px',
                           transition: 'all 0.2s'
