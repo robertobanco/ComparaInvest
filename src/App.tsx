@@ -502,7 +502,8 @@ function App() {
   const [pdfOptions, setPdfOptions] = useState({
     includeCards: true,
     includeChart: true,
-    includeTable: true
+    includeTable: true,
+    includeMonthlyFlow: false
   });
 
   // --- THEME SYSTEM ---
@@ -948,6 +949,7 @@ function App() {
   // Refs para as seções do relatório PDF
   const reportHeaderRef = useRef<HTMLDivElement>(null);
   const reportChartsRef = useRef<HTMLDivElement>(null);
+  const reportMonthlyFlowRef = useRef<HTMLDivElement>(null);
 
   const generatePDF = async () => {
     if (generatingPdf) return;
@@ -989,14 +991,43 @@ function App() {
         pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
       };
 
-      // --- PÁGINA 1: Header, Parâmetros, Cards, Gráfico de Barras ---
+      // --- PÁGINA 1: Header, Parâmetros, Cards ---
       if (reportHeaderRef.current) {
         await addSectionToPdf(reportHeaderRef.current);
       }
 
-      // --- PÁGINA 2: Gráfico Evolução, Tabela, Disclaimer ---
-      if (reportChartsRef.current) {
+      // --- PÁGINA 2: Gráfico Evolução, Tabela Resumo, Disclaimer ---
+      // Só adiciona se houver conteúdo selecionado para esta seção
+      if (reportChartsRef.current && (pdfOptions.includeChart || pdfOptions.includeTable)) {
         await addSectionToPdf(reportChartsRef.current, true); // true = nova página
+      }
+
+      // --- PÁGINAS EXTRAS: Tabela Mensal (Paginada) ---
+      if (pdfOptions.includeMonthlyFlow && reportMonthlyFlowRef.current) {
+        // Buscar todas as tabelas parciais (páginas) dentro do container
+        const flowPages = reportMonthlyFlowRef.current.querySelectorAll('.monthly-flow-page');
+
+        for (let i = 0; i < flowPages.length; i++) {
+          const pageElement = flowPages[i] as HTMLElement;
+          // Adiciona nova página para cada bloco da tabela
+          // Se for a primeira tabela mensal E não houver charts/resumo antes, 
+          // poderíamos tentar encaixar na pág 1? 
+          // O header+cards ocupa bastante espaço, melhor garantir nova página para a tabela ficar legível.
+          // Mas se o usuário quiser economizar papel e couber...
+          // Vamos seguir a lógica: tabela mensal sempre começa em nova página para consistência,
+          // exceto se for o ÚNICO item selecionado e couber na primeira.
+          // Por simplicidade e segurança de layout: sempre quebra página para tabelas longas.
+
+          // Se charts NÃO foram incluídos, a variável 'chartsAdded' seria falsa.
+          // Se charts foram incluídos, já estamos na pág 2.
+          // const shouldAddPage = (pdfOptions.includeChart || pdfOptions.includeTable) || i > 0 || pdf.getNumberOfPages() > 0;
+
+          // Na prática, como addSectionToPdf(..., true/false) controla isso:
+          // Se já temos Chart (pág 2), monthly vai pra pág 3.
+          // Se só temos Header (pág 1), monthly vai pra pág 2 (pois header ocupa ~60-100% dependendo dos cards).
+
+          await addSectionToPdf(pageElement, true);
+        }
       }
 
       // Open PDF in new tab with friendly filename
@@ -1150,7 +1181,7 @@ function App() {
       </div>
 
       {/* CONTEÚDO ROLÁVEL */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px', paddingTop: '100px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px', paddingTop: '100px', paddingBottom: '80px' }}>
         <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
 
           <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px' }}>
@@ -1225,11 +1256,12 @@ function App() {
                         }}
                         style={{
                           width: '100%',
-                          backgroundColor: themeColors.inputBg,
-                          border: `1px solid ${themeColors.border}`,
+                          backgroundColor: themeColors.accentBg,
+                          border: `2px solid ${themeColors.accent}`,
                           borderRadius: '5px',
                           padding: '5px',
                           color: themeColors.text,
+                          fontWeight: '600',
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
@@ -1245,11 +1277,12 @@ function App() {
                         onChange={(e) => setParams({ ...params, months: Number(e.target.value) })}
                         style={{
                           width: '100%',
-                          backgroundColor: themeColors.inputBg,
-                          border: `1px solid ${themeColors.border}`,
+                          backgroundColor: themeColors.accentBg,
+                          border: `2px solid ${themeColors.accent}`,
                           borderRadius: '5px',
                           padding: '5px',
                           color: themeColors.text,
+                          fontWeight: '600',
                           fontSize: '11px',
                           boxSizing: 'border-box'
                         }}
@@ -1399,7 +1432,7 @@ function App() {
                   </div>
 
                   <div style={{ marginBottom: '10px' }}>
-                    <label style={{ display: 'block', fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>
+                    <label style={{ display: 'block', fontSize: '10px', color: themeColors.textSecondary, marginBottom: '3px' }}>
                       Fundos (Tx ult 12m)
                     </label>
                     <input
@@ -1409,11 +1442,11 @@ function App() {
                       onChange={(e) => setParams({ ...params, comparisonFund12MonthReturn: Number(e.target.value) })}
                       style={{
                         width: '100%',
-                        backgroundColor: '#020617',
-                        border: '1px solid #1e293b',
+                        backgroundColor: themeColors.inputBg,
+                        border: `1px solid ${themeColors.border}`,
                         borderRadius: '5px',
                         padding: '5px',
-                        color: 'white',
+                        color: themeColors.text,
                         fontSize: '11px',
                         boxSizing: 'border-box'
                       }}
@@ -1912,6 +1945,7 @@ function App() {
                       <tr style={{ borderBottom: `2px solid ${themeColors.borderStrong}` }}>
                         <th style={{ textAlign: 'left', padding: '10px', color: themeColors.textSecondary, position: 'sticky', left: 0, backgroundColor: themeColors.tableHeaderBg, zIndex: 10 }}>
                           Mês
+                          <span style={{ display: 'block', fontSize: '9px', fontWeight: 'normal', color: themeColors.textMuted, marginTop: '2px' }}>(Valor Líquido)</span>
                         </th>
                         {results.map((res) => (
                           <th key={res.name} style={{
@@ -2079,7 +2113,7 @@ function App() {
             marginTop: 'auto'
           }}>
             <div style={{ maxWidth: '1600px', margin: '0 auto', textAlign: 'center' }}>
-              <p style={{ fontSize: '10px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+              <p style={{ fontSize: '10px', color: '#94a3b8', margin: 0, lineHeight: '1.5' }}>
                 ⚠️ <strong>Aviso:</strong> Este é um simulador educacional. Os resultados são estimativas e não constituem recomendação de investimento.
                 Rentabilidade passada não garante resultados futuros. Consulte um assessor certificado antes de investir.
               </p>
@@ -2102,7 +2136,7 @@ function App() {
         }}>
 
           {/* --- PÁGINA 1: HEADER, PARÂMETROS, CARDS --- */}
-          <div ref={reportHeaderRef} style={{ padding: '30px', paddingBottom: '20px', minHeight: '1100px', position: 'relative', backgroundColor: themeColors.pdfBg }}>
+          <div ref={reportHeaderRef} style={{ padding: '30px', paddingBottom: '20px', position: 'relative', backgroundColor: themeColors.pdfBg }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
@@ -2328,131 +2362,266 @@ function App() {
               </div>
             )}
 
+            {/* Disclaimer no Header se for a única página gerada */}
+            {!pdfOptions.includeChart && !pdfOptions.includeTable && !pdfOptions.includeMonthlyFlow && (
+              <div style={{
+                padding: '15px',
+                backgroundColor: themeColors.pdfCardBg,
+                borderTop: `1px solid ${themeColors.border}`,
+                borderRadius: '8px',
+                marginTop: '20px'
+              }}>
+                <h4 style={{ fontSize: '10px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '5px', marginTop: 0 }}>
+                  ⚠️ AVISOS IMPORTANTES
+                </h4>
+                <p style={{ fontSize: '8px', color: themeColors.textSecondary, lineHeight: '1.5', margin: 0, textAlign: 'left' }}>
+                  Este simulador tem caráter estritamente educacional. Os resultados são estimativas baseadas nos parâmetros informados e condições de mercado atuais, não garantindo rentabilidade futura. As alíquotas de IR seguem a tabela regressiva vigente. O cálculo não considera custos operacionais (corretagem/custódia). Investimentos em renda variável ou atrelados à inflação possuem riscos. FGC cobre até R$ 250.000/CPF/Instituição. Consulte um profissional certificado antes de investir.
+                </p>
+                <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '8px', color: themeColors.textMuted, margin: 0 }}>
+                    ComparaInvest © {new Date().getFullYear()}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* --- PÁGINA 2: GRÁFICOS (BARRAS E EVOLUÇÃO), TABELA, DISCLAIMER --- */}
-          <div ref={reportChartsRef} style={{ padding: '30px', paddingTop: '20px', minHeight: '1100px', position: 'relative', backgroundColor: themeColors.pdfBg }}>
+          {(pdfOptions.includeChart || pdfOptions.includeTable) && (
+            <div ref={reportChartsRef} style={{ padding: '30px', paddingTop: '20px', position: 'relative', backgroundColor: themeColors.pdfBg }}>
 
-            {/* Gráfico de Barras (Rendimento Líquido) */}
-            {pdfOptions.includeChart && (
-              <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: themeColors.text, marginBottom: '10px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
-                  Rendimento Líquido
-                </h2>
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  {renderBarChart(900, 350)}
+              {/* Gráfico de Barras (Rendimento Líquido) */}
+              {pdfOptions.includeChart && (
+                <div style={{ marginBottom: '20px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: themeColors.text, marginBottom: '10px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
+                    Rendimento Líquido
+                  </h2>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    {renderBarChart(900, 350)}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Gráfico de Evolução */}
-            {pdfOptions.includeChart && (
-              <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: themeColors.text, marginBottom: '10px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
-                  Evolução Patrimonial
-                </h2>
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  {renderChart(900, 350)}
+              {/* Gráfico de Evolução */}
+              {pdfOptions.includeChart && (
+                <div style={{ marginBottom: '20px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: themeColors.text, marginBottom: '10px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
+                    Evolução Patrimonial
+                  </h2>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    {renderChart(900, 350)}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Tabela */}
-            {pdfOptions.includeTable && (
-              <div style={{ marginBottom: '30px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: themeColors.text, marginBottom: '15px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
-                  Detalhamento
-                </h2>
+              {/* Tabela */}
+              {pdfOptions.includeTable && (
+                <div style={{ marginBottom: '30px' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: themeColors.text, marginBottom: '15px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
+                    Detalhamento
+                  </h2>
+                  <div style={{
+                    backgroundColor: themeColors.pdfCardBg,
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: `1px solid ${themeColors.pdfCardBorder}`
+                  }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: themeColors.tableHeaderBg, borderBottom: `1px solid ${themeColors.borderStrong}` }}>
+                          <th style={{ padding: '8px', textAlign: 'left', color: themeColors.textSecondary }}>Investimento</th>
+                          <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>% CDI</th>
+                          <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Taxa Mensal (Líq)</th>
+                          <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Taxa Anual (Líq)</th>
+                          <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Total Bruto</th>
+                          <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>IR</th>
+                          <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Total Líquido</th>
+                          <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Rentabilidade</th>
+                          <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>vs Seu Fundo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.map((res, idx) => {
+                          const diff = getDifferential(res);
+                          return (
+                            <tr key={res.name} style={{
+                              borderBottom: `1px solid ${themeColors.border}`,
+                              backgroundColor: idx % 2 === 0 ? themeColors.tableRowEven : 'transparent'
+                            }}>
+                              <td style={{ padding: '8px', fontWeight: '600', color: res.isUserFund ? themeColors.accent : themeColors.text }}>
+                                {res.name}
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: themeColors.accent }}>
+                                {res.monthlyReturnPercentOfCDI.toFixed(0)}%
+                                {(res.type === 'lci' || res.type === 'poupanca') && (
+                                  <span style={{ color: themeColors.textMuted, fontWeight: 'normal', fontSize: '8px', display: 'block' }}>
+                                    (Gross-up: {res.grossUp.toFixed(1)}%)
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
+                                {res.monthlyRateNet.toFixed(3)}%
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
+                                {res.annualRateNet.toFixed(2)}%
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
+                                {res.grossTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: '#ef4444' }}>
+                                {res.taxAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: themeColors.accent }}>
+                                {res.netTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: themeColors.accent }}>
+                                +{res.netReturnPercent.toFixed(2)}%
+                              </td>
+                              <td style={{ padding: '8px', textAlign: 'right', color: diff ? (diff.value > 0 ? themeColors.accent : '#ef4444') : themeColors.textMuted }}>
+                                {diff ? `${diff.value > 0 ? '+' : ''}${diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '-'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div></div>
+              )}
+
+
+
+              {/* Disclaimer Compacto (Apenas se não houver Tabela Mensal depois) */}
+              {!pdfOptions.includeMonthlyFlow && (
                 <div style={{
+                  padding: '15px',
                   backgroundColor: themeColors.pdfCardBg,
+                  borderTop: `1px solid ${themeColors.border}`,
                   borderRadius: '8px',
-                  overflow: 'hidden',
-                  border: `1px solid ${themeColors.pdfCardBorder}`
+                  marginTop: 'auto'
                 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
-                    <thead>
-                      <tr style={{ backgroundColor: themeColors.tableHeaderBg, borderBottom: `1px solid ${themeColors.borderStrong}` }}>
-                        <th style={{ padding: '8px', textAlign: 'left', color: themeColors.textSecondary }}>Investimento</th>
-                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>% CDI</th>
-                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Taxa Mensal (Líq)</th>
-                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Taxa Anual (Líq)</th>
-                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Total Bruto</th>
-                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>IR</th>
-                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Total Líquido</th>
-                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>Rentabilidade</th>
-                        <th style={{ padding: '8px', textAlign: 'right', color: themeColors.textSecondary }}>vs Seu Fundo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.map((res, idx) => {
-                        const diff = getDifferential(res);
-                        return (
-                          <tr key={res.name} style={{
-                            borderBottom: `1px solid ${themeColors.border}`,
-                            backgroundColor: idx % 2 === 0 ? themeColors.tableRowEven : 'transparent'
-                          }}>
-                            <td style={{ padding: '8px', fontWeight: '600', color: res.isUserFund ? themeColors.accent : themeColors.text }}>
-                              {res.name}
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.accent }}>
-                              {res.monthlyReturnPercentOfCDI.toFixed(0)}%
-                              {(res.type === 'lci' || res.type === 'poupanca') && (
-                                <span style={{ color: themeColors.textMuted, fontWeight: 'normal', fontSize: '8px', display: 'block' }}>
-                                  (Gross-up: {res.grossUp.toFixed(1)}%)
-                                </span>
-                              )}
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
-                              {res.monthlyRateNet.toFixed(3)}%
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
-                              {res.annualRateNet.toFixed(2)}%
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.text }}>
-                              {res.grossTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: '#ef4444' }}>
-                              {res.taxAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'right', fontWeight: 'bold', color: themeColors.accent }}>
-                              {res.netTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: themeColors.accent }}>
-                              +{res.netReturnPercent.toFixed(2)}%
-                            </td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: diff ? (diff.value > 0 ? themeColors.accent : '#ef4444') : themeColors.textMuted }}>
-                              {diff ? `${diff.value > 0 ? '+' : ''}${diff.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '-'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div></div>
-            )}
-
-            {/* Disclaimer Compacto */}
-            <div style={{
-              padding: '15px',
-              backgroundColor: themeColors.pdfCardBg,
-              borderTop: `1px solid ${themeColors.border}`,
-              borderRadius: '8px',
-              marginTop: 'auto'
-            }}>
-              <h4 style={{ fontSize: '10px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '5px', marginTop: 0 }}>
-                ⚠️ AVISOS IMPORTANTES
-              </h4>
-              <p style={{ fontSize: '8px', color: themeColors.textSecondary, lineHeight: '1.3', margin: 0, textAlign: 'justify' }}>
-                Este simulador tem caráter estritamente educacional. Os resultados são estimativas baseadas nos parâmetros informados e condições de mercado atuais, não garantindo rentabilidade futura. As alíquotas de IR seguem a tabela regressiva vigente. O cálculo não considera custos operacionais (corretagem/custódia). Investimentos em renda variável ou atrelados à inflação possuem riscos. FGC cobre até R$ 250.000/CPF/Instituição. Consulte um profissional certificado antes de investir.
-              </p>
-              <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                <p style={{ fontSize: '8px', color: themeColors.textMuted, margin: 0 }}>
-                  ComparaInvest © {new Date().getFullYear()}
-                </p>
-              </div>
+                  <h4 style={{ fontSize: '10px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '5px', marginTop: 0 }}>
+                    ⚠️ AVISOS IMPORTANTES
+                  </h4>
+                  <p style={{ fontSize: '8px', color: themeColors.textSecondary, lineHeight: '1.5', margin: 0, textAlign: 'left' }}>
+                    Este simulador tem caráter estritamente educacional. Os resultados são estimativas baseadas nos parâmetros informados e condições de mercado atuais, não garantindo rentabilidade futura. As alíquotas de IR seguem a tabela regressiva vigente. O cálculo não considera custos operacionais (corretagem/custódia). Investimentos em renda variável ou atrelados à inflação possuem riscos. FGC cobre até R$ 250.000/CPF/Instituição. Consulte um profissional certificado antes de investir.
+                  </p>
+                  <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                    <p style={{ fontSize: '8px', color: themeColors.textMuted, margin: 0 }}>
+                      ComparaInvest © {new Date().getFullYear()}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
+
+          {/* --- PÁGINAS EXTRAS: Tabela Mensal Separada e Paginada --- */}
+          <div ref={reportMonthlyFlowRef}>
+            {pdfOptions.includeMonthlyFlow && results.length > 0 && results[0].monthlyDetails.length > 0 && (
+              (() => {
+                const monthsPerPdfPage = 24; // 24 meses cabem bem em uma A4 landscape ou portrait compacta
+                const totalMonths = params.months;
+                const pages = [];
+
+                for (let start = 0; start < totalMonths; start += monthsPerPdfPage) {
+                  const end = Math.min(start + monthsPerPdfPage, totalMonths);
+                  pages.push(
+                    <div key={start} className="monthly-flow-page" style={{ padding: '30px', backgroundColor: themeColors.pdfBg, minHeight: '1100px' }}>
+                      <div style={{ marginBottom: '30px' }}>
+                        <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: themeColors.text, marginBottom: '15px', borderLeft: `3px solid ${themeColors.accent}`, paddingLeft: '10px' }}>
+                          Evolução Mensal Comparada (Valores Líquidos) - Meses {start + 1} a {end}
+                        </h2>
+                        <div style={{
+                          backgroundColor: themeColors.pdfCardBg,
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          border: `1px solid ${themeColors.pdfCardBorder}`
+                        }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8px' }}>
+                            <thead>
+                              <tr style={{ backgroundColor: themeColors.tableHeaderBg, borderBottom: `1px solid ${themeColors.borderStrong}` }}>
+                                <th style={{ padding: '6px', textAlign: 'left', color: themeColors.textSecondary }}>
+                                  Mês
+                                  <span style={{ display: 'block', fontSize: '7px', fontWeight: 'normal', color: themeColors.textMuted }}>(Líq)</span>
+                                </th>
+                                {results.map(r => (
+                                  <th key={r.name} style={{
+                                    padding: '6px',
+                                    textAlign: 'right',
+                                    color: r.isUserFund ? themeColors.accent : themeColors.textSecondary,
+                                    fontWeight: r.isUserFund ? 'bold' : 'normal'
+                                  }}>
+                                    {r.name}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Array.from({ length: end - start }).map((_, idx) => {
+                                const monthIdx = start + idx;
+                                return (
+                                  <tr key={monthIdx} style={{
+                                    borderBottom: `1px solid ${themeColors.border}`,
+                                    backgroundColor: monthIdx % 2 === 0 ? themeColors.tableRowEven : 'transparent'
+                                  }}>
+                                    <td style={{ padding: '6px', fontWeight: '600', color: themeColors.text }}>
+                                      Mês {monthIdx + 1}
+                                    </td>
+                                    {results.map(r => {
+                                      const detail = r.monthlyDetails[monthIdx];
+                                      return (
+                                        <td key={r.name} style={{ padding: '6px', textAlign: 'right' }}>
+                                          {detail ? (
+                                            <>
+                                              <div style={{ fontWeight: '600', color: themeColors.accent }}>
+                                                {detail.netProfit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                              </div>
+                                              <div style={{ fontSize: '7px', color: themeColors.textMuted }}>
+                                                Acum: {detail.accumulated.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                              </div>
+                                            </>
+                                          ) : '-'}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Repetir disclaimer na última página da tabela se não houve na pág de gráficos */}
+                      {end === totalMonths && (
+                        <div style={{
+                          padding: '15px',
+                          backgroundColor: themeColors.pdfCardBg,
+                          borderTop: `1px solid ${themeColors.border}`,
+                          borderRadius: '8px',
+                          marginTop: 'auto'
+                        }}>
+                          <h4 style={{ fontSize: '10px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '5px', marginTop: 0 }}>
+                            ⚠️ AVISOS IMPORTANTES
+                          </h4>
+                          <p style={{ fontSize: '8px', color: themeColors.textSecondary, lineHeight: '1.5', margin: 0, textAlign: 'left' }}>
+                            Este simulador tem caráter estritamente educacional. Os resultados são estimativas baseadas nos parâmetros informados e condições de mercado atuais, não garantindo rentabilidade futura. As alíquotas de IR seguem a tabela regressiva vigente. O cálculo não considera custos operacionais (corretagem/custódia). Investimentos em renda variável ou atrelados à inflação possuem riscos. FGC cobre até R$ 250.000/CPF/Instituição. Consulte um profissional certificado antes de investir.
+                          </p>
+                          <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                            <p style={{ fontSize: '8px', color: themeColors.textMuted, margin: 0 }}>
+                              ComparaInvest © {new Date().getFullYear()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return pages;
+              })()
+            )}
+          </div>
         </div>
       )}
 
@@ -2507,7 +2676,8 @@ function App() {
               {[
                 { key: 'includeCards', label: '📊 Cards de Comparação' },
                 { key: 'includeChart', label: '📈 Gráficos (Barras e Evolução)' },
-                { key: 'includeTable', label: '📋 Tabela Detalhada' }
+                { key: 'includeTable', label: '📋 Tabela Detalhada' },
+                { key: 'includeMonthlyFlow', label: '📅 Evolução Mensal Comparada' }
               ].map(({ key, label }) => (
                 <label
                   key={key}
@@ -2556,7 +2726,7 @@ function App() {
               </button>
               <button
                 onClick={generatePDF}
-                disabled={generatingPdf || (!pdfOptions.includeCards && !pdfOptions.includeChart && !pdfOptions.includeTable)}
+                disabled={generatingPdf || (!pdfOptions.includeCards && !pdfOptions.includeChart && !pdfOptions.includeTable && !pdfOptions.includeMonthlyFlow)}
                 style={{
                   flex: 1,
                   padding: '12px',
@@ -2568,7 +2738,7 @@ function App() {
                   fontSize: '14px',
                   fontWeight: '600',
                   transition: 'all 0.2s',
-                  opacity: (!pdfOptions.includeCards && !pdfOptions.includeChart && !pdfOptions.includeTable) ? 0.5 : 1
+                  opacity: (!pdfOptions.includeCards && !pdfOptions.includeChart && !pdfOptions.includeTable && !pdfOptions.includeMonthlyFlow) ? 0.5 : 1
                 }}
                 onMouseEnter={(e) => !generatingPdf && (e.currentTarget.style.backgroundColor = '#2563eb')}
                 onMouseLeave={(e) => !generatingPdf && (e.currentTarget.style.backgroundColor = '#3b82f6')}
